@@ -291,6 +291,7 @@ def crear_usuario():
     correo = body.get("correo")
     password = body.get("password")
     rol_jerarquico = body.get("rol_jerarquico")
+    fecha_ingreso = body.get("fecha_ingreso")
     dependencia_id = body.get("dependencia_id")
     zona_id = body.get("zona_id")
     estado = body.get("estado")
@@ -339,6 +340,7 @@ def crear_usuario():
         correo=correo,
         password=password_hash,
         rol_jerarquico=rol_jerarquico,
+        fecha_ingreso=fecha_ingreso,
         dependencia_id=dependencia_id,
         zona_id=zona_id,
         is_admin=is_admin,

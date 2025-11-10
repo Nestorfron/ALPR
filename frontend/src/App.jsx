@@ -10,7 +10,9 @@ import Zona from "./pages/Zona";
 import Dependencia from "./pages/Dependencia";
 import Funcionario from "./pages/Funcionario";
 import Notificaciones from "./pages/Notificaciones";
+import EscalafonServicio from "./pages/EscalafonServicio";
 import CrearUsuario from "./pages/CrearUsuario";
+import EditarUsuario from "./pages/EditarUsuario";
 import CrearJefatura from "./pages/CrearJefatura";
 import CrearZona from "./pages/CrearZona";
 import CrearDependencia from "./pages/CrearDependencia";
@@ -52,7 +54,9 @@ function App() {
           <Route path="/dependencia" element={ <Dependencia /> } />
           <Route path="/funcionario" element={ <Funcionario /> } />
           <Route path="/notificaciones" element={ <Notificaciones /> } />
+          <Route path="/escalafon-servicio" element={ <EscalafonServicio /> } />
           <Route path="/crear-usuario/:dependenciaId" element={ <CrearUsuario /> } />
+          <Route path="/editar-usuario" element={ <EditarUsuario /> } />
           <Route path="/crear-jefatura" element={ <CrearJefatura /> } />
           <Route path="/crear-zona/:jefaturaId" element={ <CrearZona /> } />
           <Route path="/crear-dependencia/:zonaId" element={ <CrearDependencia /> } />

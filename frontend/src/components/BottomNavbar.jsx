@@ -1,5 +1,5 @@
 import React from "react";
-import { Home, User, Bell, LogOut } from "lucide-react";
+import { Home, User, Bell, LogOut, Calendar } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
 
@@ -27,8 +27,10 @@ const BottomNavbar = () => {
 
   const menuItems = [
     { icon: <Home size={22} />, label: "Inicio", path: getHomePath() },
+    { icon: <Calendar size={22} />, label: "Escalafón", path: "/escalafon-servicio" },
     { icon: <User size={22} />, label: "Perfil", path: "/perfil" },
     { icon: <Bell size={22} />, label: "Notificaciones", path: "/notificaciones" },
+
   ];
 
   const handleLogout = () => {

@@ -98,6 +98,12 @@ export const AppProvider = ({ children }) => {
     setLicencias([]);
   };
 
+  const recargarGuaridas = async () => {
+    const data = await fetchData(`/guardias`);
+    setGuardias(data);
+    const data2 = await fetchData(`/licencias`);
+    setLicencias(data2);
+  };
 
   const recargarDatos = async () => {
     await fetchAppData();
@@ -118,6 +124,7 @@ export const AppProvider = ({ children }) => {
         login,
         logout,
         recargarDatos,
+        recargarGuaridas,
         setUsuario,
       }}
     >

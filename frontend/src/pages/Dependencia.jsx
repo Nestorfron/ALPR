@@ -5,7 +5,7 @@ import BottomNavbar from "../components/BottomNavbar";
 import { estaTokenExpirado } from "../utils/tokenUtils";
 import { getTurnoProps } from "../utils/turnoHelpers";
 import Loading from "../components/Loading";
-import { Edit, Home, Plus } from "lucide-react";
+import { ArrowBigLeft, Edit, Home, PlusCircle } from "lucide-react";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 dayjs.extend(utc);
@@ -16,15 +16,8 @@ const Dependencia = () => {
   const [fechaSeleccionada, setFechaSeleccionada] = useState(
     dayjs().format("YYYY-MM-DD")
   );
-  const {
-    usuario,
-    dependencias,
-    turnos,
-    guardias,
-    licencias,
-    token,
-    loading,
-  } = useAppContext();
+  const { usuario, dependencias, turnos, guardias, licencias, token, loading } =
+    useAppContext();
 
   useEffect(() => {
     if (!token || estaTokenExpirado(token)) {
@@ -33,15 +26,6 @@ const Dependencia = () => {
   }, [token, navigate]);
 
   if (loading) return <Loading />;
-
-  if (!usuario)
-    return (
-      <div className="flex items-center justify-center h-screen bg-white dark:bg-slate-900">
-        <p className="text-gray-600 dark:text-gray-300">
-          No se encontró información del usuario.
-        </p>
-      </div>
-    );
 
   // Dependencia del jefe
   const miDependencia = dependencias.find((dep) =>
@@ -121,6 +105,7 @@ const Dependencia = () => {
         {/* Contenido */}
         {usuario.rol_jerarquico === "JEFE_DEPENDENCIA" && miDependencia ? (
           <div className="space-y-6">
+       
             <div className="flex items-center mb-4 gap-2">
               <input
                 type="date"
@@ -139,7 +124,7 @@ const Dependencia = () => {
               </button>
               <IconButton
                 className="ms-auto"
-                icon={Plus}
+                icon={PlusCircle}
                 tooltip="Agregar turno"
                 onClick={() =>
                   navigate("/crear-turno", {
@@ -225,12 +210,14 @@ const Dependencia = () => {
                                   </td>
                                   <td className="px-4 py-2 text-center">
                                     <button
-                                      className="inline-flex items-center gap-1 px-3 py-1 text-sm"
+                                      className="inline-flex items-center justify-center p-1.5 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-800 text-blue-600 dark:text-blue-400 transition-all"
                                       onClick={() =>
-                                        alert(`Editar funcionario ${f.nombre}`)
+                                        navigate("/editar-usuario", {
+                                          state: { usuario: f },
+                                        })
                                       }
                                     >
-                                      <Edit size={16} />
+                                      <Edit size={18} />
                                     </button>
                                   </td>
                                 </tr>
@@ -254,19 +241,9 @@ const Dependencia = () => {
               })
             ) : (
               <div>
-                <p className="text-center text-gray-500 dark:text-gray-400">
+                <p className="text-center text-gray-500 bg-white dark:bg-slate-800 dark:text-gray-400 rounded-2xl shadow-sm border border-blue-100 dark:border-slate-700 p-4 text-center">
                   No hay turnos asignados a esta dependencia.
                 </p>
-                <IconButton
-                  icon={Plus}
-                  tooltip="Agregar turno"
-                  onClick={() =>
-                    navigate("/crear-turno", {
-                      state: { depId: miDependencia?.id },
-                    })
-                  }
-                  size="sm"
-                />
               </div>
             )}
 
@@ -278,7 +255,7 @@ const Dependencia = () => {
                 </h3>
                 <IconButton
                   className="ms-auto"
-                  icon={Plus}
+                  icon={PlusCircle}
                   tooltip="Agregar usuario"
                   onClick={() =>
                     navigate(`/crear-usuario/${miDependencia?.id}`)
@@ -334,12 +311,14 @@ const Dependencia = () => {
                           </td>
                           <td className="px-4 py-2 text-center">
                             <button
-                              className="inline-flex items-center gap-1 py-1 text-sm "
+                              className="inline-flex items-center justify-center p-1.5 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-800 text-blue-600 dark:text-blue-400 transition-all"
                               onClick={() =>
-                                alert(`Editar funcionario ${f.nombre}`)
+                                navigate("/editar-usuario", {
+                                  state: { usuario: f },
+                                })
                               }
                             >
-                              <Edit size={16} />
+                              <Edit size={18} />
                             </button>
                           </td>
                         </tr>
