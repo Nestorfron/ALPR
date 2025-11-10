@@ -7,7 +7,7 @@ from flask_migrate import Migrate # type: ignore
 from extensions import mail # type: ignore
 
 from config import Config
-from api.models import db, User
+from api.models import db, Usuario, Turno, Jefatura, Zona, Dependencia, Licencia
 
 # Importa tus Blueprints
 from api.routes import api
@@ -26,7 +26,12 @@ migrate = Migrate(app, db)
 
 # Flask-Admin
 admin = Admin(app, name='Panel Admin', template_mode='bootstrap3')
-admin.add_view(ModelView(User, db.session))
+admin.add_view(ModelView(Usuario, db.session))
+admin.add_view(ModelView(Turno, db.session))
+admin.add_view(ModelView(Jefatura, db.session)) 
+admin.add_view(ModelView(Zona, db.session))
+admin.add_view(ModelView(Dependencia, db.session))
+admin.add_view(ModelView(Licencia, db.session))
 
 app.register_blueprint(api, url_prefix='/api')
 

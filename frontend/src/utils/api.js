@@ -115,3 +115,7 @@ export const loginUser = async (correo, password) => {
     throw err;
   }
 };
+
+export const logoutUser = async () => {
+  localStorage.removeItem("token");
+};

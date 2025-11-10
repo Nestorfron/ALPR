@@ -1,12 +1,126 @@
 import React, { createContext, useState, useEffect, useContext } from "react";
-import { fetchData } from "../utils/api";
+import { fetchData, loginUser, logoutUser } from "../utils/api";
+import { estaTokenExpirado } from "../utils/tokenUtils";
 
 const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
+  const [usuario, setUsuario] = useState(null);
+  const [jefaturas, setJefaturas] = useState([]);
+  const [zonas, setZonas] = useState([]);
+  const [dependencias, setDependencias] = useState([]);
+  const [turnos, setTurnos] = useState([]);
+  const [guardias, setGuardias] = useState([]);
+  const [licencias, setLicencias] = useState([]);
+
+  const [token, setToken] = useState(localStorage.getItem("token") || null);
+  const [userId, setUserId] = useState(localStorage.getItem("userId") || null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchAppData = async () => {
+    if (!token || !userId) return;
+    setLoading(true);
+
+    try {
+      const usuarioData = await fetchData(`/usuarios/${userId}`);
+      setUsuario(usuarioData);
+
+      if (usuarioData?.rol_jerarquico === "ADMINISTRADOR" || usuarioData?.rol_jerarquico === "JEFE_ZONA") {
+        const [jefaturasData] = await Promise.all([
+          fetchData("/jefaturas"),
+        ]);
+        setJefaturas(jefaturasData || []);
+      } else if (usuarioData?.rol_jerarquico === "JEFE_DEPENDENCIA" || usuarioData?.rol_jerarquico === "FUNCIONARIO") {
+        const [jefaturasData, dependenciasData, turnosData, guardiasData, licenciasData, ] = await Promise.all([
+          fetchData("/jefaturas"),
+          fetchData("/dependencias"),
+          fetchData("/turnos"),
+          fetchData("/guardias"),
+          fetchData("/licencias"),
+        ]);
+        setJefaturas(jefaturasData || []);
+        setDependencias(dependenciasData || []);
+        setTurnos(turnosData || []);
+        setGuardias(guardiasData || []);
+        setLicencias(licenciasData || []);
+      }
+    } catch (error) {
+      console.error("Error cargando datos de la app:", error);
+      logout();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (token && userId && !estaTokenExpirado(token)) {
+      fetchAppData();
+    } else {
+      setLoading(false);
+    }
+  }, [token, userId]);
+
+
+  const login = async (correo, password) => {
+    try {
+      const data = await loginUser(correo, password);
+      if (data.token && data.usuario?.id) {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("userId", data.usuario.id);
+        setToken(data.token);
+        setUserId(data.usuario.id);
+
+        await fetchAppData();
+        return data;
+      } else {
+        throw new Error(
+          "Respuesta de login incompleta: falta token o usuario.id"
+        );
+      }
+    } catch (err) {
+      console.error("Error al iniciar sesión:", err);
+      throw new Error(err?.message || "Error al iniciar sesión");
+    }
+  };
+
+  const logout = () => {
+    logoutUser();
+    localStorage.removeItem("token");
+    localStorage.removeItem("userId");
+    setToken(null);
+    setUserId(null);
+    setUsuario(null);
+    setJefaturas([]);
+    setZonas([]);
+    setDependencias([]);
+    setTurnos([]);
+    setGuardias([]);
+    setLicencias([]);
+  };
+
+
+  const recargarDatos = async () => {
+    await fetchAppData();
+  };
 
   return (
-    <AppContext.Provider value={{ }}>
+    <AppContext.Provider
+      value={{
+        usuario,
+        jefaturas,
+        zonas,
+        dependencias,
+        turnos,
+        guardias,
+        licencias,
+        token,
+        loading,
+        login,
+        logout,
+        recargarDatos,
+        setUsuario,
+      }}
+    >
       {children}
     </AppContext.Provider>
   );

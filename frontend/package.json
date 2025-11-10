@@ -11,9 +11,11 @@
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
+    "@heroui/react": "^2.8.5",
     "@nextui-org/react": "^2.6.10",
     "@vercel/speed-insights": "^1.1.0",
     "dayjs": "^1.11.13",
+    "framer-motion": "^12.23.24",
     "html-to-image": "^1.11.13",
     "html2canvas": "^1.4.1",
     "jspdf": "^3.0.1",
