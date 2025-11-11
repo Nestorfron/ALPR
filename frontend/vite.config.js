@@ -14,8 +14,8 @@ export default defineConfig({
         'mask-icon.svg'
       ],
       manifest: {
-        name: 'Mi Aplicación PWA',
-        short_name: 'MiApp',
+        name: 'SGP2.0',
+        short_name: 'SGP2.0',
         description: 'Aplicación React con soporte PWA',
         theme_color: '#ffffff',
         background_color: '#ffffff',

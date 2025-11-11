@@ -38,6 +38,20 @@ const Funcionario = () => {
     )
   );
 
+  // Abreviar nombre
+
+  const abreviarNombre = (nombreCompleto) => {
+    if (!nombreCompleto) return "";
+    const partes = nombreCompleto.trim().split(" ");
+    if (partes.length === 1) return partes[0];
+
+    const inicial = partes[0][0];
+    const apellido = partes.find((p) => p === p.toUpperCase());
+    return inicial && apellido
+      ? `${inicial}. ${apellido}`
+      : `${inicial}. ${partes[1] || ""}`;
+  };
+
   const miTurno = turnos.find(
     (t) => t.dependencia_id === miDependencia?.id && t.id === usuario.turno_id
   );
@@ -138,15 +152,14 @@ const Funcionario = () => {
         </div>
 
         {/* Tabla: Próximas Guardias */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow border border-blue-100 dark:border-slate-700 overflow-x-auto mt-6">
-          <div className="px-4 py-3 bg-blue-50 dark:bg-slate-900 border-b border-blue-100 dark:border-slate-700 rounded-t-xl">
-            <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-400">
+        <div className="overflow-x-auto bg-blue-50 dark:bg-slate-800 rounded-xl shadow border border-blue-100 dark:border-slate-700 mt-6">
+            <h3 className=" p-4 text-lg font-semibold text-blue-800 dark:text-blue-400">
               Próximas Guardias
             </h3>
-          </div>
-          <table className="min-w-full text-xs divide-y divide-gray-200 dark:divide-slate-700">
+         
+          <table className="bg-white dark:bg-slate-800 min-w-full text-xs divide-y divide-gray-200 dark:divide-slate-700">
             <thead className="bg-blue-50 dark:bg-slate-900">
-              <tr className="text-sm">
+              <tr className="bg-white dark:bg-slate-800 text-sm">
                 <th className="px-2 py-2 text-center font-medium text-gray-700 dark:text-gray-300">
                   Grado / Nombre
                 </th>
@@ -156,6 +169,8 @@ const Funcionario = () => {
                     className="px-2 py-2 text-center font-medium text-gray-700 dark:text-gray-300"
                   >
                     {dayjs(fecha).format("DD/MM")}
+                    <br />
+                    {dayjs(fecha).format("ddd")}
                   </th>
                 ))}
               </tr>
@@ -180,7 +195,7 @@ const Funcionario = () => {
                     className="hover:bg-blue-50 dark:hover:bg-slate-900 transition-colors"
                   >
                     <td className="text-left px-2 py-2 text-gray-700 dark:text-gray-300 truncate">
-                      G{f.grado} {f.nombre}
+                      G{f.grado} {abreviarNombre(f.nombre)}
                     </td>
                     {proximosDias.map((fecha) => {
                       const { clase, contenido } = getAsignacion(

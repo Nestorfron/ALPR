@@ -81,6 +81,20 @@ const Dependencia = () => {
       (a, b) => ordenTurnos.indexOf(a.nombre) - ordenTurnos.indexOf(b.nombre)
     );
 
+  // Abreviar nombre
+
+  const abreviarNombre = (nombreCompleto) => {
+    if (!nombreCompleto) return "";
+    const partes = nombreCompleto.trim().split(" ");
+    if (partes.length === 1) return partes[0];
+
+    const inicial = partes[0][0];
+    const apellido = partes.find((p) => p === p.toUpperCase());
+    return inicial && apellido
+      ? `${inicial}. ${apellido}`
+      : `${inicial}. ${partes[1] || ""}`;
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-blue-50 to-white dark:from-slate-950 dark:to-slate-900 transition-colors duration-300">
       <main className="flex-1 px-6 py-8 space-y-6 mb-8">
@@ -197,14 +211,14 @@ const Dependencia = () => {
                                   key={f.id}
                                   className="hover:bg-blue-50 dark:hover:bg-slate-900 transition-colors"
                                 >
-                                  <td className="text-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
+                                  <td className="text-center px-2 py-2 text-sm text-gray-700 dark:text-gray-300">
                                     {f.grado}
                                   </td>
                                   <td className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
-                                    {f.nombre}
+                                    {abreviarNombre(f.nombre)}
                                   </td>
                                   <td
-                                    className={`px-4 py-2 text-sm text-center ${clase}`}
+                                    className={`border px-4 py-2 text-sm text-center ${clase}`}
                                   >
                                     {contenido}
                                   </td>
@@ -268,7 +282,7 @@ const Dependencia = () => {
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
                   <thead className="bg-blue-50 dark:bg-slate-900">
                     <tr>
-                      <th className="px-4 py-2 text-center text-sm font-medium text-gray-700 dark:text-gray-300">
+                      <th className="px-1 py-2 text-center text-sm font-medium text-gray-700 dark:text-gray-300">
                         Grado
                       </th>
                       <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -277,7 +291,7 @@ const Dependencia = () => {
                       <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-300">
                         Turno
                       </th>
-                      <th className="py-2 text-center text-sm font-medium text-gray-700 dark:text-gray-300">
+                      <th className="py-1 text-center text-sm font-medium text-gray-700 dark:text-gray-300">
                         -
                       </th>
                     </tr>
@@ -299,7 +313,7 @@ const Dependencia = () => {
                           key={f.id}
                           className="hover:bg-blue-50 dark:hover:bg-slate-900 transition-colors"
                         >
-                          <td className="text-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
+                          <td className="text-center  py-2 text-sm text-gray-700 dark:text-gray-300">
                             {f.grado}
                           </td>
                           <td className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
@@ -309,7 +323,7 @@ const Dependencia = () => {
                             {turnos.find((t) => t.id === f.turno_id)?.nombre ||
                               "-"}
                           </td>
-                          <td className="px-4 py-2 text-center">
+                          <td className="px-2 py-2 text-center">
                             <button
                               className="inline-flex items-center justify-center p-1.5 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-800 text-blue-600 dark:text-blue-400 transition-all"
                               onClick={() =>

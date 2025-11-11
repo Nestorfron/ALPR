@@ -15,11 +15,10 @@ import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 dayjs.extend(isSameOrAfter);
 dayjs.extend(isSameOrBefore);
 import utc from "dayjs/plugin/utc";
-import "dayjs/locale/es"; 
+import "dayjs/locale/es";
 dayjs.locale("es");
 dayjs.extend(utc);
 import { toPng } from "html-to-image";
-
 
 export default function EscalafonServicio() {
   const navigate = useNavigate();
@@ -69,9 +68,8 @@ export default function EscalafonServicio() {
     funcionarios.filter((f) => f.turno_id === turnoId);
 
   const getCelda = (funcionario, dia) => {
-    const fechaDia = dia.utc().format("YYYY-MM-DD"); 
+    const fechaDia = dia.utc().format("YYYY-MM-DD");
 
-    
     const licencia = licencias.find((l) => {
       if (l.usuario_id !== funcionario.id) return false;
 
@@ -96,7 +94,6 @@ export default function EscalafonServicio() {
       }
     }
 
-    
     const guardia = guardias.find(
       (g) =>
         g.usuario_id === funcionario.id &&
@@ -110,17 +107,16 @@ export default function EscalafonServicio() {
 
   const capturar = () => {
     const elemento = document.getElementById("contenedor-tablas");
-  
+
     const originalWidth = elemento.style.width;
     const originalHeight = elemento.style.height;
     const originalPadding = elemento.style.padding;
-  
+
     elemento.style.padding = "20px";
-  
 
     elemento.style.width = elemento.scrollWidth + 40 + "px"; // +40 = 20px izquierda + 20px derecha
     elemento.style.height = elemento.scrollHeight + 40 + "px"; // igual para altura
-  
+
     toPng(elemento, {
       cacheBust: true,
       width: elemento.scrollWidth + 40,
@@ -130,7 +126,7 @@ export default function EscalafonServicio() {
         elemento.style.width = originalWidth;
         elemento.style.height = originalHeight;
         elemento.style.padding = originalPadding;
-  
+
         const link = document.createElement("a");
         link.download = "turnos.png";
         link.href = dataUrl;
@@ -138,13 +134,13 @@ export default function EscalafonServicio() {
       })
       .catch((err) => {
         console.error("Error capturando pantalla:", err);
-  
+
         elemento.style.width = originalWidth;
         elemento.style.height = originalHeight;
         elemento.style.padding = originalPadding;
       });
-  }; 
-  
+  };
+
   const ordenTurnos = [
     "Primer Turno",
     "BROU",
@@ -172,19 +168,19 @@ export default function EscalafonServicio() {
 
   const handleCrearGuardia = async ({ usuario, dia, tipo, comentario }) => {
     if (!token) return;
-  
+
     try {
-      const fechaBase = dia.utc().startOf("day"); 
-  
+      const fechaBase = dia.utc().startOf("day");
+
       const esBloque = tipo === "T" || tipo.toLowerCase() === "brou";
-  
+
       if (!esBloque) {
         const existente = guardias.find(
           (g) =>
             g.usuario_id === usuario.id &&
-            dayjs(g.fecha_inicio).utc().startOf("day").isSame(fechaBase, "day") 
+            dayjs(g.fecha_inicio).utc().startOf("day").isSame(fechaBase, "day")
         );
-  
+
         if (existente) {
           const endpoint =
             existente.tipo === "licencia"
@@ -194,13 +190,13 @@ export default function EscalafonServicio() {
               : `guardias/${existente.id}`;
           await deleteData(endpoint, token);
         }
-  
+
         await postData(
           "/guardias",
           {
             usuario_id: usuario.id,
-            fecha_inicio: fechaBase.toISOString(), 
-            fecha_fin: fechaBase.toISOString(),    
+            fecha_inicio: fechaBase.toISOString(),
+            fecha_fin: fechaBase.toISOString(),
             tipo,
             comentario,
           },
@@ -209,26 +205,26 @@ export default function EscalafonServicio() {
         );
       } else {
         const diasBloque = Array.from({ length: 5 }, (_, i) =>
-          fechaBase.add(i, "day").utc() 
+          fechaBase.add(i, "day").utc()
         );
-  
+
         const hayGuardiaFutura = diasBloque.some((f) =>
           guardias.some(
             (g) =>
               g.usuario_id === usuario.id &&
-              dayjs(g.fecha_inicio).utc().startOf("day").isSame(f, "day") 
+              dayjs(g.fecha_inicio).utc().startOf("day").isSame(f, "day")
           )
         );
-  
+
         const diasACrear = hayGuardiaFutura ? [fechaBase] : diasBloque;
-  
+
         for (const fecha of diasACrear) {
           const existente = guardias.find(
             (g) =>
               g.usuario_id === usuario.id &&
-              dayjs(g.fecha_inicio).utc().startOf("day").isSame(fecha, "day") 
+              dayjs(g.fecha_inicio).utc().startOf("day").isSame(fecha, "day")
           );
-  
+
           if (existente) {
             const endpoint =
               existente.tipo === "licencia"
@@ -238,13 +234,13 @@ export default function EscalafonServicio() {
                 : `guardias/${existente.id}`;
             await deleteData(endpoint, token);
           }
-  
+
           await postData(
             "/guardias",
             {
               usuario_id: usuario.id,
-              fecha_inicio: fecha.toISOString(), 
-              fecha_fin: fecha.toISOString(),    
+              fecha_inicio: fecha.toISOString(),
+              fecha_fin: fecha.toISOString(),
               tipo,
               comentario,
             },
@@ -253,7 +249,7 @@ export default function EscalafonServicio() {
           );
         }
       }
-  
+
       recargarGuaridas();
       setSelectorTipo(null);
     } catch (error) {
@@ -261,7 +257,6 @@ export default function EscalafonServicio() {
       alert("Ocurrió un error al crear la guardia.");
     }
   };
-  
 
   const handleEliminarLicencia = async ({ usuario, dia }) => {
     const fechaBase = dia.utc().startOf("day");
@@ -271,11 +266,11 @@ export default function EscalafonServicio() {
         dayjs(l.fecha_inicio).utc().startOf("day").isSame(fechaBase, "day")
     );
 
-    if (!licencia) return; 
+    if (!licencia) return;
 
     try {
       await deleteData(`licencias/${licencia.id}`, token);
-      recargarGuaridas(); 
+      recargarGuaridas();
     } catch (error) {
       console.error("❌ Error al eliminar licencia:", error);
       alert("Ocurrió un error al eliminar la licencia.");
@@ -330,17 +325,17 @@ export default function EscalafonServicio() {
       {/* Tablas */}
       <div
         id="contenedor-tablas"
-        className="space-y-6 bg-white dark:bg-slate-800 rounded-lg shadow p-4 overflow-x-auto"
+        className="space-y-2 bg-white dark:bg-slate-800 rounded-lg shadow p-1 overflow-x-auto"
       >
         {turnosOrdenados.map((turno) => {
           const lista = funcionariosPorTurno(turno.id);
 
           return (
-            <div key={turno.id}>
+            <div key={turno.id} className="relative z-[1] -translate-x-2">
               <table className="min-w-full text-sm text-center border-collapse table-fixed w-full">
                 <thead>
                   <tr className="bg-gray-200 dark:bg-slate-900">
-                    <th className="border bg-white dark:bg-slate-800 px-2 py-1 text-left w-40 min-w-[5rem]">
+                    <th className="border bg-white dark:bg-slate-800 px-2 py-1 text-left w-40 min-w-[8rem] sticky left-0 z-20 shadow-md">
                       <h2 className="text-lg font-semibold text-blue-800 dark:text-blue-400 truncate">
                         {turno.nombre}
                       </h2>
@@ -375,7 +370,7 @@ export default function EscalafonServicio() {
                       .map((f) => (
                         <tr key={f.id}>
                           <td
-                            className="border bg-white dark:bg-slate-800 px-2 py-1 text-left w-40 whitespace-nowrap overflow-hidden truncate"
+                            className="border bg-white dark:bg-slate-800 px-2 py-1 text-left w-40 whitespace-nowrap overflow-hidden truncate sticky left-0 z-10 shadow-md"
                             title={`G${f.grado} ${f.nombre}`}
                           >
                             G{f.grado} {abreviarNombre(f.nombre)}
