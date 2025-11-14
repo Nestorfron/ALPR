@@ -12,6 +12,7 @@ export const AppProvider = ({ children }) => {
   const [turnos, setTurnos] = useState([]);
   const [guardias, setGuardias] = useState([]);
   const [licencias, setLicencias] = useState([]);
+  const [extraordinarias, setExtraordinarias] = useState([]);
 
   const [token, setToken] = useState(localStorage.getItem("token") || null);
   const [userId, setUserId] = useState(localStorage.getItem("userId") || null);
@@ -41,7 +42,10 @@ export const AppProvider = ({ children }) => {
         setJefaturas(jefaturasData || []);
         setDependencias(dependenciasData || []);
         setTurnos(turnosData || []);
-        setGuardias(guardiasData || []);
+        const ordinariasData = guardiasData.filter(g => g.tipo !== "extraordinaria");
+        setGuardias(ordinariasData);
+        const extraorariasData = guardiasData.filter(g => g.tipo === "extraordinaria" || g.tipo === "curso");
+        setExtraordinarias(extraorariasData);
         setLicencias(licenciasData || []);
       }
     } catch (error) {
@@ -95,12 +99,18 @@ export const AppProvider = ({ children }) => {
     setDependencias([]);
     setTurnos([]);
     setGuardias([]);
+    setExtraordinarias([]);
     setLicencias([]);
+    setUsuario(null);
+
   };
 
   const recargarGuaridas = async () => {
     const data = await fetchData(`/guardias`);
-    setGuardias(data);
+    const ordinariasData2 = data.filter(g => g.tipo !== "extraordinaria");
+    setGuardias(ordinariasData2);
+    const extraorariasData2 = data.filter(g => g.tipo === "extraordinaria");
+    setExtraordinarias(extraorariasData2);
     const data2 = await fetchData(`/licencias`);
     setLicencias(data2);
   };
@@ -118,6 +128,7 @@ export const AppProvider = ({ children }) => {
         dependencias,
         turnos,
         guardias,
+        extraordinarias,
         licencias,
         token,
         loading,

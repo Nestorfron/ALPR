@@ -6,6 +6,7 @@ import { putData } from "../utils/api";
 import Navbar from "../components/BottomNavbar";
 import { useAppContext } from "../context/AppContext";
 import { estaTokenExpirado } from "../utils/tokenUtils";
+import BackButton from "../components/BackButton";
 
 export default function EditarUsuario() {
   const navigate = useNavigate();
@@ -207,6 +208,7 @@ export default function EditarUsuario() {
           >
             {loading ? "Guardando..." : "Guardar cambios"}
           </button>
+          <BackButton to={-1} tooltip="Volver" />
         </form>
       </div>
 
@@ -231,12 +233,8 @@ export default function EditarUsuario() {
               <h2 className="text-lg font-semibold text-blue-800 dark:text-blue-200">
                 Usuario actualizado con éxito
               </h2>
-              <button
-                onClick={() => navigate(-1)}
-                className="mt-6 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-medium transition-all"
-              >
-                Volver
-              </button>
+              <BackButton to={-1} tooltip="Volver" />
+              
             </motion.div>
           </motion.div>
         )}

@@ -6,6 +6,7 @@ import { postData } from "../utils/api";
 import Navbar from "../components/BottomNavbar";
 import { estaTokenExpirado } from "../utils/tokenUtils";
 import { useAppContext } from "../context/AppContext";
+import BackButton from "../components/BackButton";
 
 export default function CrearJefatura() {
   const { token, recargarDatos } = useAppContext();
@@ -102,13 +103,7 @@ export default function CrearJefatura() {
             {loading ? "Creando..." : "Crear Jefatura"}
           </button>
 
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="w-full py-2 text-sm text-blue-600 dark:text-blue-300 mt-2 underline hover:opacity-80"
-          >
-            ← Volver
-          </button>
+          <BackButton to={-1} tooltip="Volver" />
         </form>
       </div>
 
@@ -142,12 +137,7 @@ export default function CrearJefatura() {
                 >
                   Crear otra
                 </button>
-                <button
-                  onClick={() => navigate("/admin")}
-                  className="bg-gray-300 hover:bg-gray-400 text-gray-800 dark:bg-gray-700 dark:text-white px-5 py-2 rounded-lg font-medium transition-all"
-                >
-                  Volver
-                </button>
+                <BackButton to="/admin" tooltip="Volver" />
               </div>
             </motion.div>
           </motion.div>

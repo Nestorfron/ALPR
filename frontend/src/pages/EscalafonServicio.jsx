@@ -39,7 +39,7 @@ export default function EscalafonServicio() {
   const [selectorLicencia, setSelectorLicencia] = useState(null);
 
   useEffect(() => {
-    if (!token || estaTokenExpirado(token)) navigate("/login");
+    if ( !token || estaTokenExpirado(token)) navigate("/login");
   }, [token, navigate]);
 
   if (loading) return <Loading />;

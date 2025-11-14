@@ -9,7 +9,7 @@ const Home = () => {
   const { usuario, jefaturas, zonas, dependencias, token, loading } = useAppContext();
 
   useEffect(() => {
-    if (!token || estaTokenExpirado(token)) {
+    if ( !token || estaTokenExpirado(token)) {
       navigate("/login");
     }
   }, [token, navigate]);

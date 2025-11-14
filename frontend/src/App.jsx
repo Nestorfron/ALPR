@@ -17,6 +17,7 @@ import CrearJefatura from "./pages/CrearJefatura";
 import CrearZona from "./pages/CrearZona";
 import CrearDependencia from "./pages/CrearDependencia";
 import CrearTurno from "./pages/CrearTurno";
+import CrearExtraordinaria from "./pages/CrearExtraordinaria";
 
 
 function App() {
@@ -61,6 +62,7 @@ function App() {
           <Route path="/crear-zona/:jefaturaId" element={ <CrearZona /> } />
           <Route path="/crear-dependencia/:zonaId" element={ <CrearDependencia /> } />
           <Route path="/crear-turno" element={ <CrearTurno /> } />
+          <Route path="/crear-extraordinaria" element={ <CrearExtraordinaria /> } />
         </Routes>
       </BrowserRouter>
 

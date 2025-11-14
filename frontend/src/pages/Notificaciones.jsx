@@ -1,11 +1,19 @@
 import React, { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAppContext } from "../context/AppContext";
+import { estaTokenExpirado } from "../utils/tokenUtils";
 import BottomNavbar from "../components/BottomNavbar";
 
 
 const Notificaciones = () => {
+  const navigate = useNavigate();
+  const { usuario, notificaciones, token, recargarDatos } = useAppContext();
+
   useEffect(() => {
-    console.log("Notificaciones");
-  }, []);
+    if (!token || estaTokenExpirado(token)) {
+      navigate("/login");
+    }
+  }, [token, navigate]);
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-blue-50 to-white dark:from-slate-950 dark:to-slate-900 transition-colors duration-300">

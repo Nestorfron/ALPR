@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import BottomNavbar from "../components/BottomNavbar";
 import { estaTokenExpirado } from "../utils/tokenUtils";
 import { getTurnoProps } from "../utils/turnoHelpers";
+import { AnimatePresence, motion } from "framer-motion";
+import { Trash } from "lucide-react";
 import Loading from "../components/Loading";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
@@ -13,8 +15,16 @@ dayjs.extend(utc);
 const Funcionario = () => {
   const navigate = useNavigate();
   const fechaSeleccionada = dayjs().format("YYYY-MM-DD");
-  const { usuario, dependencias, turnos, guardias, licencias, token, loading } =
-    useAppContext();
+  const {
+    usuario,
+    dependencias,
+    turnos,
+    guardias,
+    extraordinarias,
+    licencias,
+    token,
+    loading,
+  } = useAppContext();
 
   useEffect(() => {
     if (!token || estaTokenExpirado(token)) navigate("/login");
@@ -100,6 +110,11 @@ const Funcionario = () => {
   const getAsignacion = (usuarioId, fecha) =>
     turnoPorFuncionario[usuarioId][fecha];
 
+  //Mis extraordinarias
+  const misExtraordinarias = extraordinarias.filter(
+    (u) => u.usuario_id === usuario.id
+  );
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-slate-950 transition-colors duration-300">
       <main className="flex-1 px-6 py-8 space-y-6 mb-8">
@@ -107,8 +122,7 @@ const Funcionario = () => {
         <div className="text-center">
           <h1 className="text-2xl font-bold text-blue-900 dark:text-blue-400">
             Bienvenido,
-            <br />
-            G{usuario.grado} {usuario.nombre}
+            <br />G{usuario.grado} {usuario.nombre}
           </h1>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
             Funcionario de {miDependencia?.nombre}
@@ -151,12 +165,69 @@ const Funcionario = () => {
           </table>
         </div>
 
+        {/* ================= Extraordinarias ================= */}
+
+        <div>
+          {misExtraordinarias.length > 0 ? (
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-blue-100 dark:border-slate-700 overflow-x-auto">
+              <div className="flex items-center justify-between px-4 py-3 bg-blue-50 dark:bg-slate-900 border-b border-blue-100 dark:border-slate-700 rounded-t-2xl">
+                <h3 className="text-lg font-semibold text-blue-700 dark:text-blue-400">
+                  Extraordinarias Asignadas
+                </h3>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                  <thead className="bg-blue-50 dark:bg-slate-900">
+                    <tr>
+                      <th className="px-4 py-2 text-center text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Fecha
+                      </th>
+                      <th className="px-4 py-2 text-center text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Comentario
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
+                    {misExtraordinarias.map((g) => {
+                      return (
+                        <tr
+                          key={g.id}
+                          className="hover:bg-blue-50 dark:hover:bg-slate-900 transition-colors"
+                        >
+                          <td className="text-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
+                            {dayjs(g.fecha_inicio).utc().format("DD/MM HH:mm")}{" "}
+                            -{" "}
+                            {dayjs(g.fecha_inicio).utc().format("DD/MM") ===
+                            dayjs(g.fecha_fin).utc().format("DD/MM")
+                              ? dayjs(g.fecha_fin).utc().format("HH:mm")
+                              : dayjs(g.fecha_fin).utc().format("DD/MM HH:mm")}
+                          </td>
+                          <td className="border px-4 py-2 text-sm text-center">
+                            {g.comentario}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <p className="text-center text-gray-500 bg-white dark:bg-slate-800 dark:text-gray-400 rounded-2xl shadow-sm border border-blue-100 dark:border-slate-700 p-4 text-center">
+                No hay extraordinarias asignadas.
+              </p>
+            </div>
+          )}
+        </div>
+
         {/* Tabla: Próximas Guardias */}
         <div className="overflow-x-auto bg-blue-50 dark:bg-slate-800 rounded-xl shadow border border-blue-100 dark:border-slate-700 mt-6">
-            <h3 className=" p-4 text-lg font-semibold text-blue-800 dark:text-blue-400">
-              Próximas Guardias
-            </h3>
-         
+          <h3 className=" p-4 text-lg font-semibold text-blue-800 dark:text-blue-400">
+            Próximas Guardias
+          </h3>
+
           <table className="bg-white dark:bg-slate-800 min-w-full text-xs divide-y divide-gray-200 dark:divide-slate-700">
             <thead className="bg-blue-50 dark:bg-slate-900">
               <tr className="bg-white dark:bg-slate-800 text-sm">

@@ -7,6 +7,7 @@ import Navbar from "../components/BottomNavbar";
 import { useAppContext } from "../context/AppContext";
 import { estaTokenExpirado } from "../utils/tokenUtils";
 import dayjs from "dayjs";
+import BackButton from "../components/BackButton";
 
 export default function CrearUsuario() {
   const navigate = useNavigate();
@@ -241,19 +242,7 @@ export default function CrearUsuario() {
             {loading ? "Creando usuario..." : "Crear usuario"}
           </button>
 
-          <button
-            type="button"
-            onClick={() =>
-              navigate(
-                usuario.rol_jerarquico === "JEFE_DEPENDENCIA"
-                  ? "/dependencia"
-                  : "/admin"
-              )
-            }
-            className="w-full py-2 text-sm text-blue-600 dark:text-blue-300 mt-2 underline hover:opacity-80"
-          >
-            ← Volver
-          </button>
+          <BackButton to={usuario.rol_jerarquico === "JEFE_DEPENDENCIA" ? "/dependencia" : "/admin"} tooltip="Volver" />
         </form>
       </div>
 
@@ -285,18 +274,7 @@ export default function CrearUsuario() {
                 >
                   Crear otro
                 </button>
-                <button
-                  onClick={() =>
-                    navigate(
-                      usuario.rol_jerarquico === "JEFE_DEPENDENCIA"
-                        ? "/dependencia"
-                        : "/admin"
-                    )
-                  }
-                  className="bg-gray-300 hover:bg-gray-400 text-gray-800 dark:bg-gray-700 dark:text-white px-5 py-2 rounded-lg font-medium transition-all"
-                >
-                  Volver
-                </button>
+                <BackButton to={usuario.rol_jerarquico === "JEFE_DEPENDENCIA" ? "/dependencia" : "/admin"} tooltip="Volver" />
               </div>
             </motion.div>
           </motion.div>

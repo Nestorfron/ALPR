@@ -4,8 +4,10 @@ import { useNavigate } from "react-router-dom";
 import BottomNavbar from "../components/BottomNavbar";
 import { estaTokenExpirado } from "../utils/tokenUtils";
 import { getTurnoProps } from "../utils/turnoHelpers";
+import { AnimatePresence, motion } from "framer-motion";
 import Loading from "../components/Loading";
-import { ArrowBigLeft, Edit, Home, PlusCircle } from "lucide-react";
+import { Edit, Home, PlusCircle, Trash, CheckCircle2 } from "lucide-react";
+import { deleteData } from "../utils/api";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 dayjs.extend(utc);
@@ -16,11 +18,24 @@ const Dependencia = () => {
   const [fechaSeleccionada, setFechaSeleccionada] = useState(
     dayjs().format("YYYY-MM-DD")
   );
-  const { usuario, dependencias, turnos, guardias, licencias, token, loading } =
-    useAppContext();
+  const {
+    usuario,
+    dependencias,
+    turnos,
+    guardias,
+    extraordinarias,
+    licencias,
+    token,
+    loading,
+    recargarDatos,
+  } = useAppContext();
+  const [success, setSuccess] = useState(false);
+  const [loading2, setLoading2] = useState(false);
+  const [confirmarBorrado, setConfirmarBorrado] = useState(false);
+  const [guardiaAEliminar, setGuardiaAEliminar] = useState(null);
 
   useEffect(() => {
-    if (!token || estaTokenExpirado(token)) {
+    if ( !token || estaTokenExpirado(token)) {
       navigate("/login");
     }
   }, [token, navigate]);
@@ -95,6 +110,52 @@ const Dependencia = () => {
       : `${inicial}. ${partes[1] || ""}`;
   };
 
+  // Extraordinarias hoy
+
+  const extraordinariasHoy = extraordinarias.filter(
+    (g) =>
+      dayjs(g.fecha_inicio).utc().format("YYYY-MM-DD") === fechaSeleccionada
+  );
+
+  // Funcionario extraordinaria
+
+  const usuarioExtraordinaria = (id) => {
+    const usuario = miDependencia.usuarios.find((u) => u.id === id);
+    return "G" + usuario.grado + " " + abreviarNombre(usuario.nombre);
+  };
+
+  // Eliminar Extraordinaria (ahora con loading)
+  const handleDelete = async (id) => {
+    setLoading2(true);
+    try {
+      const tokenLocal = localStorage.getItem("token");
+      await deleteData(`/guardias/${id}`, tokenLocal);
+      setSuccess(true);
+      if (typeof recargarDatos === "function") recargarDatos();
+    } catch (err) {
+      alert(`❌ Error: ${err.message}`);
+    } finally {
+      setLoading2(false);
+      // cerrar modal si se estaba usando
+      setConfirmarBorrado(false);
+      setGuardiaAEliminar(null);
+    }
+  };
+
+  // Abrir modal de confirmación
+  const handleAbrirConfirmacion = (id) => {
+    setGuardiaAEliminar(id);
+    setConfirmarBorrado(true);
+  };
+
+  // Confirmar y borrar
+  const handleEliminarGuardia = async () => {
+    if (!guardiaAEliminar) return;
+    await handleDelete(guardiaAEliminar);
+    setConfirmarBorrado(false);
+    setGuardiaAEliminar(null);
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-blue-50 to-white dark:from-slate-950 dark:to-slate-900 transition-colors duration-300">
       <main className="flex-1 px-6 py-8 space-y-6 mb-14">
@@ -119,7 +180,6 @@ const Dependencia = () => {
         {/* Contenido */}
         {usuario.rol_jerarquico === "JEFE_DEPENDENCIA" && miDependencia ? (
           <div className="space-y-6">
-       
             <div className="flex items-center mb-4 gap-2">
               <input
                 type="date"
@@ -136,6 +196,103 @@ const Dependencia = () => {
               >
                 <Home size={20} />
               </button>
+            </div>
+
+            {/* ================= Extraordinarias ================= */}
+            <div>
+              {" "}
+              <IconButton
+                className="ms-auto"
+                icon={PlusCircle}
+                tooltip="Agregar Extraordinaria"
+                onClick={() =>
+                  navigate("/crear-extraordinaria", {
+                    state: { depId: miDependencia?.id },
+                  })
+                }
+                size="sm"
+              />
+              {extraordinariasHoy.length > 0 ? (
+                <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-blue-100 dark:border-slate-700 overflow-x-auto">
+                  <div className="flex items-center justify-between px-4 py-3 bg-blue-50 dark:bg-slate-900 border-b border-blue-100 dark:border-slate-700 rounded-t-2xl">
+                    <h3 className="text-lg font-semibold text-blue-700 dark:text-blue-400">
+                      Extraordinarias
+                    </h3>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                      <thead className="bg-blue-50 dark:bg-slate-900">
+                        <tr>
+                          <th className="px-4 py-2 text-center text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Grado / Nombre
+                          </th>
+                          <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Fecha
+                          </th>
+                          <th className="px-4 py-2 text-center text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Observaciones
+                          </th>
+                          <th className="px-4 py-2 text-center text-sm font-medium text-gray-700 dark:text-gray-300">
+                            -
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
+                        {extraordinariasHoy.length > 0 ? (
+                          extraordinariasHoy.map((g) => {
+                            return (
+                              <tr
+                                key={g.id}
+                                className="hover:bg-blue-50 dark:hover:bg-slate-900 transition-colors"
+                              >
+                                <td className="text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
+                                  {usuarioExtraordinaria(g.usuario_id)}
+                                </td>
+                                <td className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
+                                  {dayjs(fechaSeleccionada).format("DD/MM")}
+                                </td>
+                                <td
+                                  className={`border px-4 py-2 text-sm text-center`}
+                                >
+                                  {g.comentario}
+                                </td>
+                                <td className="px-4 py-2 text-center">
+                                  <button
+                                    className="inline-flex items-center justify-center p-1.5 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-800 text-blue-600 dark:text-blue-400 transition-all"
+                                    onClick={() => handleAbrirConfirmacion(g.id)}
+                                  >
+                                    <Trash size={18} />
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        ) : (
+                          <tr>
+                            <td
+                              colSpan={4}
+                              className="px-4 py-2 text-center text-gray-500 dark:text-gray-400"
+                            >
+                              No hay funcionarios asignados a esta dependencia.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-center text-gray-500 bg-white dark:bg-slate-800 dark:text-gray-400 rounded-2xl shadow-sm border border-blue-100 dark:border-slate-700 p-4 text-center">
+                    No hay extraordinarias asignadas.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* ================= Turnos ================= */}
+            <div>
               <IconButton
                 className="ms-auto"
                 icon={PlusCircle}
@@ -147,119 +304,117 @@ const Dependencia = () => {
                 }
                 size="sm"
               />
-            </div>
+              {misTurnos.length > 0 ? (
+                misTurnos.map((t) => {
+                  const funcionariosDelTurno = miDependencia.usuarios
+                    .filter(
+                      (f) =>
+                        f.rol_jerarquico !== "JEFE_DEPENDENCIA" &&
+                        f.turno_id === t.id
+                    )
+                    .sort((a, b) => {
+                      const gradoA = a.grado || "";
+                      const gradoB = b.grado || "";
+                      if (gradoA > gradoB) return -1;
+                      if (gradoA < gradoB) return 1;
+                      return (
+                        new Date(a.fecha_ingreso) - new Date(b.fecha_ingreso)
+                      );
+                    });
 
-            {/* ================= Turnos ================= */}
-            {misTurnos.length > 0 ? (
-              misTurnos.map((t) => {
-                const funcionariosDelTurno = miDependencia.usuarios
-                  .filter(
-                    (f) =>
-                      f.rol_jerarquico !== "JEFE_DEPENDENCIA" &&
-                      f.turno_id === t.id
-                  )
-                  .sort((a, b) => {
-                    const gradoA = a.grado || "";
-                    const gradoB = b.grado || "";
-                    if (gradoA > gradoB) return -1;
-                    if (gradoA < gradoB) return 1;
-                    return (
-                      new Date(a.fecha_ingreso) - new Date(b.fecha_ingreso)
-                    );
-                  });
+                  return (
+                    <div
+                      key={t.id}
+                      className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-blue-100 dark:border-slate-700 overflow-x-auto"
+                    >
+                      {/* Título del turno */}
+                      <div className="flex items-center justify-between px-4 py-3 bg-blue-50 dark:bg-slate-900 border-b border-blue-100 dark:border-slate-700 rounded-t-2xl">
+                        <h3 className="text-lg font-semibold text-blue-700 dark:text-blue-400">
+                          {t.nombre}
+                        </h3>
+                      </div>
 
-                return (
-                  <div
-                    key={t.id}
-                    className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-blue-100 dark:border-slate-700 overflow-x-auto"
-                  >
-                    {/* Título del turno */}
-                    <div className="flex items-center justify-between px-4 py-3 bg-blue-50 dark:bg-slate-900 border-b border-blue-100 dark:border-slate-700 rounded-t-2xl">
-                      <h3 className="text-lg font-semibold text-blue-700 dark:text-blue-400">
-                        {t.nombre}
-                      </h3>
-                    </div>
-
-                    {/* Tabla de funcionarios del turno */}
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
-                        <thead className="bg-blue-50 dark:bg-slate-900">
-                          <tr>
-                            <th className="px-4 py-2 text-center text-sm font-medium text-gray-700 dark:text-gray-300">
-                              Grado
-                            </th>
-                            <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-300">
-                              Nombre
-                            </th>
-                            <th className="px-4 py-2 text-center text-sm font-medium text-gray-700 dark:text-gray-300">
-                              {dayjs(fechaSeleccionada).format("DD/MM")}
-                            </th>
-
-                            <th className="px-4 py-2 text-center text-sm font-medium text-gray-700 dark:text-gray-300">
-                              -
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
-                          {funcionariosDelTurno.length > 0 ? (
-                            funcionariosDelTurno.map((f) => {
-                              const { clase, contenido } = getTurnoProps(
-                                turnoPorFuncionario[f.id]
-                              );
-                              return (
-                                <tr
-                                  key={f.id}
-                                  className="hover:bg-blue-50 dark:hover:bg-slate-900 transition-colors"
-                                >
-                                  <td className="text-center px-2 py-2 text-sm text-gray-700 dark:text-gray-300">
-                                    {f.grado}
-                                  </td>
-                                  <td className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
-                                    {abreviarNombre(f.nombre)}
-                                  </td>
-                                  <td
-                                    className={`border px-4 py-2 text-sm text-center ${clase}`}
-                                  >
-                                    {contenido}
-                                  </td>
-                                  <td className="px-4 py-2 text-center">
-                                    <button
-                                      className="inline-flex items-center justify-center p-1.5 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-800 text-blue-600 dark:text-blue-400 transition-all"
-                                      onClick={() =>
-                                        navigate("/editar-usuario", {
-                                          state: { usuario: f },
-                                        })
-                                      }
-                                    >
-                                      <Edit size={18} />
-                                    </button>
-                                  </td>
-                                </tr>
-                              );
-                            })
-                          ) : (
+                      {/* Tabla de funcionarios del turno */}
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                          <thead className="bg-blue-50 dark:bg-slate-900">
                             <tr>
-                              <td
-                                colSpan={4}
-                                className="px-4 py-2 text-center text-gray-500 dark:text-gray-400"
-                              >
-                                No hay funcionarios asignados a este turno.
-                              </td>
+                              <th className="px-4 py-2 text-center text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Grado
+                              </th>
+                              <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Nombre
+                              </th>
+                              <th className="px-4 py-2 text-center text-sm font-medium text-gray-700 dark:text-gray-300">
+                                {dayjs(fechaSeleccionada).format("DD/MM")}
+                              </th>
+
+                              <th className="px-4 py-2 text-center text-sm font-medium text-gray-700 dark:text-gray-300">
+                                -
+                              </th>
                             </tr>
-                          )}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
+                            {funcionariosDelTurno.length > 0 ? (
+                              funcionariosDelTurno.map((f) => {
+                                const { clase, contenido } = getTurnoProps(
+                                  turnoPorFuncionario[f.id]
+                                );
+                                return (
+                                  <tr
+                                    key={f.id}
+                                    className="hover:bg-blue-50 dark:hover:bg-slate-900 transition-colors"
+                                  >
+                                    <td className="text-center px-2 py-2 text-sm text-gray-700 dark:text-gray-300">
+                                      {f.grado}
+                                    </td>
+                                    <td className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
+                                      {abreviarNombre(f.nombre)}
+                                    </td>
+                                    <td
+                                      className={`border px-4 py-2 text-sm text-center ${clase}`}
+                                    >
+                                      {contenido}
+                                    </td>
+                                    <td className="px-4 py-2 text-center">
+                                      <button
+                                        className="inline-flex items-center justify-center p-1.5 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-800 text-blue-600 dark:text-blue-400 transition-all"
+                                        onClick={() =>
+                                          navigate("/editar-usuario", {
+                                            state: { usuario: f },
+                                          })
+                                        }
+                                      >
+                                        <Edit size={18} />
+                                      </button>
+                                    </td>
+                                  </tr>
+                                );
+                              })
+                            ) : (
+                              <tr>
+                                <td
+                                  colSpan={4}
+                                  className="px-4 py-2 text-center text-gray-500 dark:text-gray-400"
+                                >
+                                  No hay funcionarios asignados a este turno.
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
-                  </div>
-                );
-              })
-            ) : (
-              <div>
-                <p className="text-center text-gray-500 bg-white dark:bg-slate-800 dark:text-gray-400 rounded-2xl shadow-sm border border-blue-100 dark:border-slate-700 p-4 text-center">
-                  No hay turnos asignados a esta dependencia.
-                </p>
-              </div>
-            )}
+                  );
+                })
+              ) : (
+                <div>
+                  <p className="text-center text-gray-500 bg-white dark:bg-slate-800 dark:text-gray-400 rounded-2xl shadow-sm border border-blue-100 dark:border-slate-700 p-4 text-center">
+                    No hay turnos asignados a esta dependencia.
+                  </p>
+                </div>
+              )}
+            </div>
 
             {/* ================= Tabla general de todos los funcionarios ================= */}
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-blue-100 dark:border-slate-700 overflow-x-auto">
@@ -347,6 +502,54 @@ const Dependencia = () => {
             Tenés acceso limitado a la información.
           </p>
         )}
+        {/* Modal confirmación eliminar */}
+        <AnimatePresence>
+          {confirmarBorrado && (
+            <motion.div
+              className="fixed inset-0 flex items-center justify-center bg-black/50 z-50"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <motion.div
+                className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl p-8 text-center max-w-sm w-full"
+                initial={{ scale: 0.8 }}
+                animate={{ scale: 1 }}
+                exit={{ scale: 0.8 }}
+              >
+                <CheckCircle2 className="text-red-500 w-16 h-16 mx-auto mb-3" />
+
+                <h2 className="text-lg font-semibold text-red-700 dark:text-red-300">
+                  ¿Eliminar guardia?
+                </h2>
+
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                  Esta acción no se puede deshacer. ¿Seguro que deseas eliminar
+                  esta guardia?
+                </p>
+
+                <div className="flex justify-center gap-3 mt-6">
+                  <button
+                    onClick={() => {
+                      setConfirmarBorrado(false);
+                      setGuardiaAEliminar(null);
+                    }}
+                    className="bg-gray-300 hover:bg-gray-400 text-gray-800 dark:bg-gray-700 dark:text-white px-5 py-2 rounded-lg font-medium transition-all"
+                  >
+                    Cancelar
+                  </button>
+
+                  <button
+                    onClick={handleEliminarGuardia}
+                    className="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg font-medium transition-all"
+                  >
+                    {loading2 ? "Eliminando..." : "Eliminar"}
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
 
       <BottomNavbar />
