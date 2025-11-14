@@ -49,8 +49,6 @@ const Dependencia = () => {
     )
   );
 
-  // Hoy en UTC
-  const hoyUTC = dayjs().utc().format("YYYY-MM-DD");
 
   // Guardías de la fecha seleccionada
   const guardiasHoy = guardias.filter(
@@ -109,13 +107,6 @@ const Dependencia = () => {
       ? `${inicial}. ${apellido}`
       : `${inicial}. ${partes[1] || ""}`;
   };
-
-  // Extraordinarias hoy
-
-  const extraordinariasHoy = extraordinarias.filter(
-    (g) =>
-      dayjs(g.fecha_inicio).utc().format("YYYY-MM-DD") === fechaSeleccionada
-  );
 
   // Funcionario extraordinaria
 
@@ -212,7 +203,7 @@ const Dependencia = () => {
                 }
                 size="sm"
               />
-              {extraordinariasHoy.length > 0 ? (
+              {extraordinarias.length > 0 ? (
                 <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-blue-100 dark:border-slate-700 overflow-x-auto">
                   <div className="flex items-center justify-between px-4 py-3 bg-blue-50 dark:bg-slate-900 border-b border-blue-100 dark:border-slate-700 rounded-t-2xl">
                     <h3 className="text-lg font-semibold text-blue-700 dark:text-blue-400">
@@ -227,20 +218,19 @@ const Dependencia = () => {
                           <th className="px-4 py-2 text-center text-sm font-medium text-gray-700 dark:text-gray-300">
                             Grado / Nombre
                           </th>
-                          <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-300">
+                          <th className="px-4 py-2 text-center text-sm font-medium text-gray-700 dark:text-gray-300">
                             Fecha
                           </th>
                           <th className="px-4 py-2 text-center text-sm font-medium text-gray-700 dark:text-gray-300">
                             Observaciones
                           </th>
-                          <th className="px-4 py-2 text-center text-sm font-medium text-gray-700 dark:text-gray-300">
+                          <th className="px-1 py-2 text-center text-sm font-medium text-gray-700 dark:text-gray-300">
                             -
                           </th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
-                        {extraordinariasHoy.length > 0 ? (
-                          extraordinariasHoy.map((g) => {
+                       {extraordinarias.map((g) => {
                             return (
                               <tr
                                 key={g.id}
@@ -249,17 +239,22 @@ const Dependencia = () => {
                                 <td className="text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
                                   {usuarioExtraordinaria(g.usuario_id)}
                                 </td>
-                                <td className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
-                                  {dayjs(fechaSeleccionada).format("DD/MM")}
+                                <td className="border px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
+                                  {dayjs(g.fecha_inicio).utc().format("DD/MM HH:mm")}{" "}
+                                  -{" "}
+                                  {dayjs(g.fecha_inicio).utc().format("DD/MM") ===
+                                  dayjs(g.fecha_fin).utc().format("DD/MM")
+                                    ? dayjs(g.fecha_fin).utc().format("HH:mm")
+                                    : dayjs(g.fecha_fin).utc().format("DD/MM HH:mm")}
                                 </td>
                                 <td
                                   className={`border px-4 py-2 text-sm text-center`}
                                 >
                                   {g.comentario}
                                 </td>
-                                <td className="px-4 py-2 text-center">
+                                <td className="px-2 py-2 text-center">
                                   <button
-                                    className="inline-flex items-center justify-center p-1.5 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-800 text-blue-600 dark:text-blue-400 transition-all"
+                                    className="inline-flex items-center justify-center p-1 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-800 text-blue-600 dark:text-blue-400 transition-all"
                                     onClick={() => handleAbrirConfirmacion(g.id)}
                                   >
                                     <Trash size={18} />
@@ -268,16 +263,7 @@ const Dependencia = () => {
                               </tr>
                             );
                           })
-                        ) : (
-                          <tr>
-                            <td
-                              colSpan={4}
-                              className="px-4 py-2 text-center text-gray-500 dark:text-gray-400"
-                            >
-                              No hay funcionarios asignados a esta dependencia.
-                            </td>
-                          </tr>
-                        )}
+                        }
                       </tbody>
                     </table>
                   </div>
