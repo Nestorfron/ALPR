@@ -34,6 +34,7 @@ const Dependencia = () => {
   const [loading2, setLoading2] = useState(false);
   const [confirmarBorrado, setConfirmarBorrado] = useState(false);
   const [guardiaAEliminar, setGuardiaAEliminar] = useState(null);
+  const [verTodas, setVerTodas] = useState(false);
 
   useEffect(() => {
     if (!token || estaTokenExpirado(token)) {
@@ -50,10 +51,16 @@ const Dependencia = () => {
     )
   );
 
- // Licencias pendientes de TODOS los funcionarios de la dependencia
-const licenciasPendientesDeLaDependencia = licenciasPendientes.filter((l) =>
-  miDependencia.usuarios.some((u) => u.id === l.usuario_id)
-);
+  // Extraordinarias a partir de hoy
+  const extraordinariasDesdeHoy = extraordinarias.filter(
+    (g) =>
+      dayjs(g.fecha_inicio).utc().format("YYYY-MM-DD") === fechaSeleccionada
+  );
+
+  // Licencias pendientes de TODOS los funcionarios de la dependencia
+  const licenciasPendientesDeLaDependencia = licenciasPendientes.filter((l) =>
+    miDependencia.usuarios.some((u) => u.id === l.usuario_id)
+  );
 
   // Guardías de la fecha seleccionada
   const guardiasHoy = guardias.filter(
@@ -210,7 +217,6 @@ const licenciasPendientesDeLaDependencia = licenciasPendientes.filter((l) =>
 
             {/* ================= Extraordinarias ================= */}
             <div>
-              {" "}
               <IconButton
                 className="ms-auto"
                 icon={PlusCircle}
@@ -222,7 +228,19 @@ const licenciasPendientesDeLaDependencia = licenciasPendientes.filter((l) =>
                 }
                 size="sm"
               />
-              {extraordinarias.length > 0 ? (
+
+              {/* Botón para ver todas */}
+              <div className="flex justify-end my-2">
+                {extraordinarias.length > 0 && <button
+                  className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                  onClick={() => setVerTodas(!verTodas)}
+                >
+                  {verTodas ? "Ver menos" : "Ver más"}
+                </button>}
+              </div>
+
+              {(verTodas ? extraordinarias : extraordinariasDesdeHoy)
+                .length > 0 ? (
                 <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-blue-100 dark:border-slate-700 overflow-x-auto">
                   <div className="flex items-center justify-between px-4 py-3 bg-blue-50 dark:bg-slate-900 border-b border-blue-100 dark:border-slate-700 rounded-t-2xl">
                     <h3 className="text-lg font-semibold text-blue-700 dark:text-blue-400">
@@ -249,43 +267,42 @@ const licenciasPendientesDeLaDependencia = licenciasPendientes.filter((l) =>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
-                        {extraordinarias.map((g) => {
-                          return (
-                            <tr
-                              key={g.id}
-                              className="hover:bg-blue-50 dark:hover:bg-slate-900 transition-colors"
-                            >
-                              <td className="text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
-                                {usuarioExtraordinaria(g.usuario_id)}
-                              </td>
-                              <td className="border px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
-                                {dayjs(g.fecha_inicio)
-                                  .utc()
-                                  .format("DD/MM HH:mm")}{" "}
-                                -{" "}
-                                {dayjs(g.fecha_inicio).utc().format("DD/MM") ===
-                                dayjs(g.fecha_fin).utc().format("DD/MM")
-                                  ? dayjs(g.fecha_fin).utc().format("HH:mm")
-                                  : dayjs(g.fecha_fin)
-                                      .utc()
-                                      .format("DD/MM HH:mm")}
-                              </td>
-                              <td
-                                className={`border px-4 py-2 text-sm text-center`}
+                        {(verTodas
+                          ? extraordinarias
+                          : extraordinariasDesdeHoy
+                        ).map((g) => (
+                          <tr
+                            key={g.id}
+                            className="hover:bg-blue-50 dark:hover:bg-slate-900 transition-colors"
+                          >
+                            <td className="text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
+                              {usuarioExtraordinaria(g.usuario_id)}
+                            </td>
+                            <td className="border px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
+                              {dayjs(g.fecha_inicio)
+                                .utc()
+                                .format("DD/MM HH:mm")}{" "}
+                              -{" "}
+                              {dayjs(g.fecha_inicio).utc().format("DD/MM") ===
+                              dayjs(g.fecha_fin).utc().format("DD/MM")
+                                ? dayjs(g.fecha_fin).utc().format("HH:mm")
+                                : dayjs(g.fecha_fin)
+                                    .utc()
+                                    .format("DD/MM HH:mm")}
+                            </td>
+                            <td className="border px-4 py-2 text-sm text-center">
+                              {g.tipo} - {g.comentario}
+                            </td>
+                            <td className="px-2 py-2 text-center">
+                              <button
+                                className="inline-flex items-center justify-center p-1 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-800 text-blue-600 dark:text-blue-400 transition-all"
+                                onClick={() => handleAbrirConfirmacion(g.id)}
                               >
-                                {g.comentario}
-                              </td>
-                              <td className="px-2 py-2 text-center">
-                                <button
-                                  className="inline-flex items-center justify-center p-1 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-800 text-blue-600 dark:text-blue-400 transition-all"
-                                  onClick={() => handleAbrirConfirmacion(g.id)}
-                                >
-                                  <Trash size={18} />
-                                </button>
-                              </td>
-                            </tr>
-                          );
-                        })}
+                                <Trash size={18} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
                       </tbody>
                     </table>
                   </div>
@@ -354,7 +371,10 @@ const licenciasPendientesDeLaDependencia = licenciasPendientes.filter((l) =>
                                 Nombre
                               </th>
                               <th className="px-4 py-2 text-center text-sm font-medium text-gray-700 dark:text-gray-300">
-                                {fechaSeleccionada === dayjs().format("YYYY-MM-DD") ? "Hoy" : dayjs(fechaSeleccionada).format("DD/MM")}
+                                {fechaSeleccionada ===
+                                dayjs().format("YYYY-MM-DD")
+                                  ? "Hoy"
+                                  : dayjs(fechaSeleccionada).format("DD/MM")}
                               </th>
                             </tr>
                           </thead>
@@ -418,9 +438,7 @@ const licenciasPendientesDeLaDependencia = licenciasPendientes.filter((l) =>
                   className="ms-auto"
                   icon={PlusCircle}
                   tooltip="Agregar usuario"
-                  onClick={() =>
-                    navigate(`/agregar-usuarios`)
-                  }
+                  onClick={() => navigate(`/agregar-usuarios`)}
                   size="sm"
                 />
               </div>

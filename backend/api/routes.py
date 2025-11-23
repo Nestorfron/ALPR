@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify # type: ignore
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required, get_current_user # type: ignore
 from werkzeug.security import generate_password_hash, check_password_hash # type: ignore
-from api.models import db, Jefatura, Zona, Dependencia, Usuario, Turno, Guardia, Licencia, PasswordResetToken
+from api.models import db, Jefatura, Zona, Dependencia, Usuario, Turno, Guardia, Licencia, PasswordResetToken, Notificacion
 import secrets
 from datetime import datetime, timedelta
 from .utils.email_utils import send_email  
@@ -593,5 +593,35 @@ def reset_password():
 
     return jsonify({"message": "Contraseña actualizada correctamente."}), 200
 
+# -------------------------------------------------------------------
+# NOTIFICACIONES
+# -------------------------------------------------------------------
+@api.route('/notificaciones', methods=['GET'])
+def listar_notificaciones():
+    data = Notificacion.query.all()        
+    return jsonify([x.serialize() for x in data]), 200
 
+@api.route('/notificaciones', methods=['POST'])
+@jwt_required()
+def crear_notificacion():
+    body = request.json
+    usuario_id = body.get("usuario_id")
+    fecha = body.get("fecha")    
+    mensaje = body.get("mensaje") 
+
+    nueva = Notificacion(usuario_id=usuario_id, fecha=fecha, mensaje=mensaje)
+    db.session.add(nueva)
+    db.session.commit()
+
+    return jsonify(nueva.serialize()), 201
+
+
+
+@api.route('/notificaciones/<int:id>', methods=['DELETE'])
+@jwt_required()
+def eliminar_notificacion(id):
+    notificacion = Notificacion.query.get(id)
+    db.session.delete(notificacion)
+    db.session.commit()
+    return jsonify({'status': 'ok'}), 200  
 

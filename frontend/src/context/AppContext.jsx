@@ -15,6 +15,7 @@ export const AppProvider = ({ children }) => {
   const [extraordinarias, setExtraordinarias] = useState([]);
   const [licenciasPendientes, setLicenciasPendientes] = useState([]);
   const [licenciasRechazadas, setLicenciasRechazadas] = useState([]);
+  const [notificaciones, setNotificaciones ] = useState([]);
   
 
 
@@ -31,28 +32,31 @@ export const AppProvider = ({ children }) => {
       setUsuario(usuarioData);
 
       if (usuarioData?.rol_jerarquico === "ADMINISTRADOR" || usuarioData?.rol_jerarquico === "JEFE_ZONA") {
-        const [jefaturasData, guardiasData, licenciasData] = await Promise.all([
+        const [jefaturasData, guardiasData, licenciasData, notificacionesData] = await Promise.all([
           fetchData("/jefaturas"),
           fetchData("/guardias"),
-          fetchData("/licencias")
+          fetchData("/licencias"),
+          fetchData("/notificaciones")
         ]);
         setJefaturas(jefaturasData || []);
         setGuardias(guardiasData || []);
         setLicencias(licenciasData || []);
+        setNotificaciones(notificacionesData || []);
       } else if (usuarioData?.rol_jerarquico === "JEFE_DEPENDENCIA" || usuarioData?.rol_jerarquico === "FUNCIONARIO") {
-        const [jefaturasData, dependenciasData, turnosData, guardiasData, licenciasData, ] = await Promise.all([
+        const [jefaturasData, dependenciasData, turnosData, guardiasData, licenciasData, notificacionesData ] = await Promise.all([
           fetchData("/jefaturas"),
           fetchData("/dependencias"),
           fetchData("/turnos"),
           fetchData("/guardias"),
           fetchData("/licencias"),
+          fetchData("/notificaciones")
         ]);
         setJefaturas(jefaturasData || []);
         setDependencias(dependenciasData || []);
         setTurnos(turnosData || []);
         const ordinariasData = guardiasData.filter(g => g.tipo !== "extraordinaria");
         setGuardias(ordinariasData);
-        const extraorariasData = guardiasData.filter(g => g.tipo === "extraordinaria" || g.tipo === "curso");
+        const extraorariasData = guardiasData.filter(g => g.tipo === "Extraordinaria" || g.tipo === "Curso" || g.tipo === "curso" || g.tipo === "extraordinaria");
         setExtraordinarias(extraorariasData);
         const licenciasAprobadas = licenciasData.filter(l => l.estado === "aprobada" || l.estado === "aprobado" || l.estado === "activo");
         setLicencias(licenciasAprobadas || []);
@@ -60,6 +64,7 @@ export const AppProvider = ({ children }) => {
         setLicenciasPendientes(licenciasPendientes || []);
         const licenciasRechazadas = licenciasData.filter(l => l.estado === "rechazada");
         setLicenciasRechazadas(licenciasRechazadas || []);
+        setNotificaciones(notificacionesData || []);
       }
     } catch (error) {
       console.error("Error cargando datos de la app:", error);
@@ -116,6 +121,7 @@ export const AppProvider = ({ children }) => {
     setLicencias([]);
     setLicenciasPendientes([]);
     setLicenciasRechazadas([]);
+    setNotificaciones([]);
     setUsuario(null);
 
   };
@@ -147,6 +153,7 @@ export const AppProvider = ({ children }) => {
         licencias,
         licenciasPendientes,
         licenciasRechazadas,
+        notificaciones,
         token,
         loading,
         login,

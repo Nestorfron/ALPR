@@ -118,7 +118,7 @@ class Usuario(db.Model):
     guardias = db.relationship('Guardia', backref='usuario', lazy=True)
     licencias = db.relationship('Licencia', backref='usuario', lazy=True)
 
-
+    notificaciones = db.relationship('Notificacion', backref='usuario', lazy=True)
 
 
     def serialize(self):
@@ -234,3 +234,24 @@ class Licencia(db.Model):
 
     def __repr__(self):
         return f'<Licencia {self.id}>'
+
+class Notificacion(db.Model):
+    __tablename__ = 'notificaciones'
+    id = db.Column(db.Integer, primary_key=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
+    fecha = db.Column(db.DateTime, nullable=False)
+    mensaje = db.Column(db.Text, nullable=False)
+
+
+    def serialize(self):
+        return {
+            'id': self.id,
+            'usuario_id': self.usuario_id,
+            'fecha': self.fecha,
+            'mensaje': self.mensaje
+        }
+
+    def __repr__(self):
+        return f'<Notificacion {self.id}>'
+    
+

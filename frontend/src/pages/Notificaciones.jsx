@@ -1,19 +1,34 @@
 import React, { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
 import { estaTokenExpirado } from "../utils/tokenUtils";
 import BottomNavbar from "../components/BottomNavbar";
-
+import { deleteData } from "../utils/api";
+import { Trash, Bell } from "lucide-react";
+import IconButton from "../components/IconButton";
 
 const Notificaciones = () => {
   const navigate = useNavigate();
-  const { usuario, notificaciones, token, recargarDatos } = useAppContext();
+  const location = useLocation();
+  const { token, recargarDatos } = useAppContext();
+
+  const notificacionesState = location.state?.notificaciones || [];
 
   useEffect(() => {
     if (!token || estaTokenExpirado(token)) {
       navigate("/login");
     }
   }, [token, navigate]);
+
+  const handleEliminarNotificacion = async (id) => {
+    try {
+      const data = await deleteData(`/notificaciones/${id}`, token);
+      if (data) navigate("/notificaciones");
+      recargarDatos();
+    } catch (err) {
+      alert(`❌ Error: ${err.message}`);
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-blue-50 to-white dark:from-slate-950 dark:to-slate-900 transition-colors duration-300">
@@ -25,27 +40,44 @@ const Notificaciones = () => {
           </h1>
         </div>
 
-        {/* Contenido */}
-        <div className="space-y-6">
-          <div className="p-4 bg-white dark:bg-slate-800 border border-blue-100 dark:border-slate-700 rounded-2xl shadow-sm">
-            <h2 className="text-lg font-semibold text-blue-700 dark:text-blue-400">
-              Notificación 1
-            </h2>
-            <p className="text-sm text-gray-700 dark:text-gray-300">
-              Esta es una notificación de prueba.
+        {/* Si NO hay notificaciones */}
+        {notificacionesState.length === 0 && (
+          <div className="text-center mt-10">
+            <p className="text-gray-600 dark:text-gray-300 text-lg">
+              No tienes notificaciones
             </p>
           </div>
+        )}
 
-          <div className="p-4 bg-white dark:bg-slate-800 border border-blue-100 dark:border-slate-700 rounded-2xl shadow-sm">
-            <h2 className="text-lg font-semibold text-blue-700 dark:text-blue-400">
-              Notificación 2
-            </h2>
-            <p className="text-sm text-gray-700 dark:text-gray-300">
-              Esta es una notificación de prueba.
-            </p>
-          </div>
+        {/* Lista de notificaciones */}
+        <div className="space-y-6">
+          {notificacionesState.map((n) => (
+            <div
+              key={n.id}
+              className=" flex items-center justify-between p-4 bg-white dark:bg-slate-800 border border-blue-100 dark:border-slate-700 rounded-2xl shadow-sm"
+            >
+              <IconButton
+                icon={Bell}
+                tooltip="Eliminar notificación"
+                onClick={() => handleEliminarNotificacion(n.id)}
+                size="sm"
+              />
+              <p className="text-sm text-gray-700 dark:text-gray-300">
+                {n.mensaje || "Sin contenido"}
+              </p>
+
+              <IconButton
+                className="my-auto ms-auto"
+                icon={Trash}
+                tooltip="Eliminar notificación"
+                onClick={() => handleEliminarNotificacion(n.id)}
+                size="sm"
+              />
+            </div>
+          ))}
         </div>
       </main>
+
       <BottomNavbar />
     </div>
   );

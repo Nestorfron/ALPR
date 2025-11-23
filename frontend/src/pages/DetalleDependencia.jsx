@@ -30,6 +30,13 @@ const DetalleDependencia = () => {
     token,
     loading,
   } = useAppContext();
+  const [verTodas, setVerTodas] = useState(false);
+
+  // Extraordinarias a partir de hoy
+  const extraordinariasDesdeHoy = extraordinarias.filter(
+    (g) =>
+      dayjs(g.fecha_inicio).utc().format("YYYY-MM-DD") === fechaSeleccionada
+  );
 
   // ahora guardamos solo el ID cuando se selecciona desde el select
   const [dependenciaSeleccionada, setDependenciaSeleccionada] = useState(null);
@@ -181,7 +188,19 @@ const DetalleDependencia = () => {
 
             {/* ================= Extraordinarias ================= */}
             <div>
-              {extraordinarias.length > 0 ? (
+
+              {/* Botón para ver todas */}
+              <div className="flex justify-end my-2">
+                {extraordinarias.length > 0 && <button
+                  className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                  onClick={() => setVerTodas(!verTodas)}
+                >
+                  {verTodas ? "Ver menos" : "Ver más"}
+                </button>}
+              </div>
+
+              {(verTodas ? extraordinarias : extraordinariasDesdeHoy)
+                .length > 0 ? (
                 <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-blue-100 dark:border-slate-700 overflow-x-auto">
                   <div className="flex items-center justify-between px-4 py-3 bg-blue-50 dark:bg-slate-900 border-b border-blue-100 dark:border-slate-700 rounded-t-2xl">
                     <h3 className="text-lg font-semibold text-blue-700 dark:text-blue-400">
@@ -205,35 +224,34 @@ const DetalleDependencia = () => {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
-                        {extraordinarias.map((g) => {
-                          return (
-                            <tr
-                              key={g.id}
-                              className="hover:bg-blue-50 dark:hover:bg-slate-900 transition-colors"
-                            >
-                              <td className="text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
-                                {usuarioExtraordinaria(g.usuario_id)}
-                              </td>
-                              <td className="border px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
-                                {dayjs(g.fecha_inicio)
-                                  .utc()
-                                  .format("DD/MM HH:mm")}{" "}
-                                -{" "}
-                                {dayjs(g.fecha_inicio).utc().format("DD/MM") ===
-                                dayjs(g.fecha_fin).utc().format("DD/MM")
-                                  ? dayjs(g.fecha_fin).utc().format("HH:mm")
-                                  : dayjs(g.fecha_fin)
-                                      .utc()
-                                      .format("DD/MM HH:mm")}
-                              </td>
-                              <td
-                                className={`border px-4 py-2 text-sm text-center`}
-                              >
-                                {g.comentario}
-                              </td>
-                            </tr>
-                          );
-                        })}
+                        {(verTodas
+                          ? extraordinarias
+                          : extraordinariasDesdeHoy
+                        ).map((g) => (
+                          <tr
+                            key={g.id}
+                            className="hover:bg-blue-50 dark:hover:bg-slate-900 transition-colors"
+                          >
+                            <td className="text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
+                              {usuarioExtraordinaria(g.usuario_id)}
+                            </td>
+                            <td className="border px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
+                              {dayjs(g.fecha_inicio)
+                                .utc()
+                                .format("DD/MM HH:mm")}{" "}
+                              -{" "}
+                              {dayjs(g.fecha_inicio).utc().format("DD/MM") ===
+                              dayjs(g.fecha_fin).utc().format("DD/MM")
+                                ? dayjs(g.fecha_fin).utc().format("HH:mm")
+                                : dayjs(g.fecha_fin)
+                                    .utc()
+                                    .format("DD/MM HH:mm")}
+                            </td>
+                            <td className="border px-4 py-2 text-sm text-center">
+                              {g.tipo} - {g.comentario}
+                            </td>
+                          </tr>
+                        ))}
                       </tbody>
                     </table>
                   </div>

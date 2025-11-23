@@ -86,7 +86,13 @@ export default function CrearGuardia() {
       };
 
       const data = await postData("guardias", body, token);
-      if (data) setSuccess(true);
+      const data1 = await postData("notificaciones", {
+        usuario_id: formData.usuario_id,
+        fecha: dayjs(formData.fecha_inicio).format("YYYY-MM-DD HH:mm"),
+        mensaje: `Se le ha asignado ${formData.tipo} para el día ${dayjs(formData.fecha_inicio).format("DD/MM/YYYY")} hora ${dayjs(formData.fecha_inicio).format("HH:mm")}`,
+      }, token);
+
+      if (data && data1) setSuccess(true);
       recargarDatos();
     } catch (err) {
       alert(`❌ Error: ${err.message}`);
