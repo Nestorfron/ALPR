@@ -8,6 +8,7 @@ import Perfil from "./pages/Perfil";
 import AdminPanel from "./pages/AdminPanel";
 import Zona from "./pages/Zona";
 import Dependencia from "./pages/Dependencia";
+import DetalleDependencia from "./pages/DetalleDependencia";
 import Funcionario from "./pages/Funcionario";
 import Notificaciones from "./pages/Notificaciones";
 import EscalafonServicio from "./pages/EscalafonServicio";
@@ -58,6 +59,7 @@ function App() {
           <Route path="/admin" element={ <AdminPanel /> } />
           <Route path="/zona" element={ <Zona /> } />
           <Route path="/dependencia" element={ <Dependencia /> } />
+          <Route path="/detalle-dependencia" element={ <DetalleDependencia /> } />
           <Route path="/funcionario" element={ <Funcionario /> } />
           <Route path="/notificaciones" element={ <Notificaciones /> } />
           <Route path="/escalafon-servicio" element={ <EscalafonServicio /> } />

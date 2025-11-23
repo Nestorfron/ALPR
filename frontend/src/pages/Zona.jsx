@@ -1,13 +1,49 @@
 import React from "react";
 import { useAppContext } from "../context/AppContext";
+import { useNavigate } from "react-router-dom";
 import BottomNavbar from "../components/BottomNavbar";
 import Loading from "../components/Loading";
-import { Edit } from "lucide-react";
+import IconButton from "../components/IconButton";
+import { Eye } from "lucide-react";
+import {
+  Cell,
+  Tooltip,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 const Zona = () => {
   const { usuario, jefaturas, loading } = useAppContext();
+  const navigate = useNavigate();
+
+  const dependencias = jefaturas
+    ?.flatMap(
+      (jefatura) =>
+        jefatura.zonas?.flatMap((zona) => zona.dependencias || []) || []
+    )
+    .filter((dep) => dep.zona_id === usuario.zona_id)
+    .filter((dep) => dep.nombre?.startsWith("Seccional"));
 
   if (loading) return <Loading />;
+
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white dark:bg-slate-800 p-2 rounded-md shadow border border-gray-200 dark:border-slate-700 text-sm">
+          <p className="font-semibold text-gray-800 dark:text-gray-200">
+            {label}
+          </p>
+          <p className="text-gray-600 dark:text-gray-300">
+            {payload[0].value} func.
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
 
   if (!usuario) {
     return (
@@ -21,7 +57,7 @@ const Zona = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-blue-50 to-white dark:from-slate-950 dark:to-slate-900 transition-colors duration-300">
-      <main className="flex-1 px-6 py-8 space-y-8">
+      <main className="flex-1 px-6 py-8 space-y-8 mb-20">
         <div className="text-center">
           <h1 className="text-2xl font-semibold text-blue-700 dark:text-blue-400">
             Bienvenido, {usuario.nombre}
@@ -78,17 +114,15 @@ const Zona = () => {
                                 <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-300">
                                   Jefe
                                 </th>
-                                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-300">
-                                  Funcionarios
-                                </th>
-                                <th className="px-4 py-2 text-center text-sm font-medium text-gray-700 dark:text-gray-300">
-                                  Acciones
+                                <th className="px-4 py-2 text-center text-sm text-gray-700 dark:text-gray-300">
+                                  . . .
                                 </th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
                               {zona.dependencias
-                                ?.sort((a, b) =>
+                                ?.filter((dep) => dep.nombre?.startsWith("Seccional"))
+                                .sort((a, b) =>
                                   a.nombre.localeCompare(b.nombre, undefined, {
                                     numeric: true,
                                   })
@@ -115,22 +149,20 @@ const Zona = () => {
                                           : "Sin jefe";
                                       })()}
                                     </td>
-                                    <td className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
-                                      {dep.usuarios?.filter(
-                                        (u) =>
-                                          u.rol_jerarquico !==
-                                          "JEFE_DEPENDENCIA"
-                                      ).length || 0}
-                                    </td>
                                     <td className="px-4 py-2 text-center">
-                                      <button
-                                        className="inline-flex items-center gap-1 px-3 py-1 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 transition-colors"
-                                        onClick={() =>
-                                          alert(`Editar ${dep.nombre}`)
-                                        }
-                                      >
-                                        <Edit size={16} /> Editar
-                                      </button>
+                                        <IconButton
+                                          className="m-auto"
+                                          icon={Eye}
+                                          tooltip="Ver detalles"
+                                          onClick={() =>
+                                            navigate(`/detalle-dependencia`,
+                                              {
+                                                state: { dependencia: dep },
+                                              }
+                                            )
+                                          }
+                                          size="sm"
+                                        />
                                     </td>
                                   </tr>
                                 ))}
@@ -147,8 +179,48 @@ const Zona = () => {
             Tenés acceso limitado a la información.
           </p>
         )}
-      </main>
 
+        {/* === GRAFICA DE BARRAS VERTICAL === */}
+        <div className="w-full bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-blue-100 dark:border-slate-700">
+          <h3 className="text-center pt-6 text-md font-semibold text-blue-700 dark:text-blue-400">
+            Funcionarios por Dependencia
+          </h3>
+
+          <div className="w-full px-4 pb-6" style={{ height: "350px" }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={dependencias?.map((dep) => ({
+                  name: dep.nombre.replace("Seccional", "Secc"),
+                  value:
+                    dep.usuarios?.filter(
+                      (u) => u.rol_jerarquico !== "JEFE_DEPENDENCIA"
+                    ).length || 0,
+                }))}
+                margin={{ top: 20, right: 20, bottom: 30, left: 10 }}
+              >
+                <XAxis
+                  dataKey="name"
+                  tick={{ fontSize: 12 }}
+                  interval={0}
+                  angle={-45}
+                  textAnchor="end"
+                />
+                <YAxis allowDecimals={false} />
+                <Tooltip content={<CustomTooltip />} />
+
+                <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                  {dependencias.map((_, index) => (
+                    <Cell
+                      key={index}
+                      fill={`hsl(${(index * 60) % 360}, 70%, 55%)`}
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </main>
       <BottomNavbar />
     </div>
   );

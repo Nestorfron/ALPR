@@ -1,39 +1,57 @@
 import React, { useEffect, useState } from "react";
 import { useAppContext } from "../context/AppContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import BottomNavbar from "../components/BottomNavbar";
 import { estaTokenExpirado } from "../utils/tokenUtils";
 import { getTurnoProps } from "../utils/turnoHelpers";
 import { AnimatePresence, motion } from "framer-motion";
 import Loading from "../components/Loading";
-import { Edit, Home, PlusCircle, Trash, CheckCircle2 } from "lucide-react";
-import { deleteData } from "../utils/api";
+import { Home, SearchX } from "lucide-react";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 dayjs.extend(utc);
 import IconButton from "../components/IconButton";
 
-const Dependencia = () => {
+const DetalleDependencia = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const dependenciaFromState = location.state?.dependencia || null;
+
   const [fechaSeleccionada, setFechaSeleccionada] = useState(
     dayjs().format("YYYY-MM-DD")
   );
   const {
     usuario,
-    dependencias,
-    turnos,
+    jefaturas,
+    licencias,
     guardias,
     extraordinarias,
-    licencias,
-    licenciasPendientes,
     token,
     loading,
-    recargarDatos,
   } = useAppContext();
-  const [success, setSuccess] = useState(false);
-  const [loading2, setLoading2] = useState(false);
-  const [confirmarBorrado, setConfirmarBorrado] = useState(false);
-  const [guardiaAEliminar, setGuardiaAEliminar] = useState(null);
+
+  // ahora guardamos solo el ID cuando se selecciona desde el select
+  const [dependenciaSeleccionada, setDependenciaSeleccionada] = useState(null);
+
+  const dependencias = jefaturas
+    ?.flatMap(
+      (jefatura) =>
+        jefatura.zonas?.flatMap((zona) => zona.dependencias || []) || []
+    )
+    .filter((dep) => dep.zona_id === usuario.zona_id)
+    .filter((dep) => dep.nombre?.startsWith("Seccional"));
+
+  // dependenciaFinal: usa el state si viene por navigate, si no busca por id en la lista
+  const dependenciaFinal =
+    dependenciaFromState ||
+    dependencias.find((d) => d.id === dependenciaSeleccionada) ||
+    null;
+
+  const handleChange = (e) => {
+    const id = Number(e.target.value) || null;
+    setDependenciaSeleccionada(id);
+  };
 
   useEffect(() => {
     if (!token || estaTokenExpirado(token)) {
@@ -43,17 +61,8 @@ const Dependencia = () => {
 
   if (loading) return <Loading />;
 
-  // Dependencia del jefe
-  const miDependencia = dependencias.find((dep) =>
-    dep.usuarios?.some(
-      (u) => u.id === usuario.id && u.rol_jerarquico === "JEFE_DEPENDENCIA"
-    )
-  );
-
- // Licencias pendientes de TODOS los funcionarios de la dependencia
-const licenciasPendientesDeLaDependencia = licenciasPendientes.filter((l) =>
-  miDependencia.usuarios.some((u) => u.id === l.usuario_id)
-);
+  // usamos dependenciaFinal en lugar de dependencia
+  const turnos = dependenciaFinal?.turnos || [];
 
   // Guardías de la fecha seleccionada
   const guardiasHoy = guardias.filter(
@@ -92,15 +101,14 @@ const licenciasPendientesDeLaDependencia = licenciasPendientes.filter((l) =>
     "Destacados",
   ];
 
-  // Turnos
+  // Turnos: filtrar por dependenciaFinal.id
   const misTurnos = turnos
-    .filter((t) => t.dependencia_id === miDependencia?.id)
+    .filter((t) => t.dependencia_id === dependenciaFinal?.id)
     .sort(
       (a, b) => ordenTurnos.indexOf(a.nombre) - ordenTurnos.indexOf(b.nombre)
     );
 
   // Abreviar nombre
-
   const abreviarNombre = (nombreCompleto) => {
     if (!nombreCompleto) return "";
     const partes = nombreCompleto.trim().split(" ");
@@ -113,82 +121,45 @@ const licenciasPendientesDeLaDependencia = licenciasPendientes.filter((l) =>
       : `${inicial}. ${partes[1] || ""}`;
   };
 
-  // Funcionario extraordinaria
-
+  // Funcionario extraordinaria (con protección si no encuentra usuario)
   const usuarioExtraordinaria = (id) => {
-    const usuario = miDependencia.usuarios.find((u) => u.id === id);
-    return "G" + usuario.grado + " " + abreviarNombre(usuario.nombre);
-  };
-
-  // Eliminar Extraordinaria (ahora con loading)
-  const handleDelete = async (id) => {
-    setLoading2(true);
-    try {
-      const tokenLocal = localStorage.getItem("token");
-      await deleteData(`/guardias/${id}`, tokenLocal);
-      setSuccess(true);
-      if (typeof recargarDatos === "function") recargarDatos();
-    } catch (err) {
-      alert(`❌ Error: ${err.message}`);
-    } finally {
-      setLoading2(false);
-      // cerrar modal si se estaba usando
-      setConfirmarBorrado(false);
-      setGuardiaAEliminar(null);
-    }
-  };
-
-  // Abrir modal de confirmación
-  const handleAbrirConfirmacion = (id) => {
-    setGuardiaAEliminar(id);
-    setConfirmarBorrado(true);
-  };
-
-  // Confirmar y borrar
-  const handleEliminarGuardia = async () => {
-    if (!guardiaAEliminar) return;
-    await handleDelete(guardiaAEliminar);
-    setConfirmarBorrado(false);
-    setGuardiaAEliminar(null);
+    const usuarioLocal = dependenciaFinal?.usuarios?.find((u) => u.id === id);
+    if (!usuarioLocal) return "—";
+    return "G" + usuarioLocal.grado + " " + abreviarNombre(usuarioLocal.nombre);
   };
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-blue-50 to-white dark:from-slate-950 dark:to-slate-900 transition-colors duration-300">
       <main className="flex-1 px-6 py-8 space-y-6 mb-14">
-        {/* Encabezado */}
-        <div className="text-center">
-          <h1 className="text-2xl font-semibold text-blue-700 dark:text-blue-400">
-            Bienvenido,
-            <br />G{usuario.grado} {usuario.nombre}
-          </h1>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            {" "}
-            {usuario.rol_jerarquico === "JEFE_DEPENDENCIA"
-              ? `Jefe de ${miDependencia?.nombre}`
-              : ""}
-          </p>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            Total de funcionarios:{" "}
-            {miDependencia ? miDependencia.usuarios.length - 1 : 0}
-          </p>
+        <div className="flex flex-col items-center justify-center gap-2 mb-4">
+          <select
+            name="dependencia"
+            value={
+              dependenciaSeleccionada
+                ? dependenciaSeleccionada
+                : dependenciaFinal?.id
+            }
+            onChange={handleChange}
+            className="border border-gray-300 dark:border-slate-700 rounded px-3 py-2 bg-transparent focus:ring-2 transition-all"
+          >
+            <option value="">Selecciona una dependencia</option>
+            {dependencias
+              ?.filter((dep) => dep.nombre?.startsWith("Seccional"))
+              .sort((a, b) =>
+                a.nombre.localeCompare(b.nombre, undefined, {
+                  numeric: true,
+                })
+              )
+              .map((dep) => (
+                <option key={dep.id} value={dep.id}>
+                  {dep.descripcion}
+                </option>
+              ))}
+          </select>
         </div>
 
-        {/* Solicitudes de licencias pendientes */}
-
-        {licenciasPendientesDeLaDependencia.length > 0 && (
-          <div
-            onClick={() => navigate("/solicitudes-licencia")}
-            className="cursor-pointer bg-blue-100 dark:bg-blue-900 border border-blue-300 dark:border-blue-700 text-blue-800 dark:text-blue-300 rounded-xl px-4 py-3 text-center text-sm font-medium shadow-sm hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors"
-          >
-            📌 Tienes {licenciasPendientes.length} solicitud
-            {licenciasPendientes.length > 1 ? "es" : ""} de licencia pendiente
-            {licenciasPendientes.length > 1 ? "s" : ""}. Haz clic para
-            revisarlas.
-          </div>
-        )}
-
-        {/* Contenido */}
-        {usuario.rol_jerarquico === "JEFE_DEPENDENCIA" && miDependencia ? (
+        {/* Si el usuario es JEFE_ZONA mostramos contenido para seleccionar/visualizar dependencia */}
+        {usuario.rol_jerarquico === "JEFE_ZONA" && dependenciaFinal ? (
           <div className="space-y-6">
             <div className="flex items-center mb-4 gap-2">
               <input
@@ -210,18 +181,6 @@ const licenciasPendientesDeLaDependencia = licenciasPendientes.filter((l) =>
 
             {/* ================= Extraordinarias ================= */}
             <div>
-              {" "}
-              <IconButton
-                className="ms-auto"
-                icon={PlusCircle}
-                tooltip="Agregar Extraordinaria"
-                onClick={() =>
-                  navigate("/crear-extraordinaria", {
-                    state: { depId: miDependencia?.id },
-                  })
-                }
-                size="sm"
-              />
               {extraordinarias.length > 0 ? (
                 <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-blue-100 dark:border-slate-700 overflow-x-auto">
                   <div className="flex items-center justify-between px-4 py-3 bg-blue-50 dark:bg-slate-900 border-b border-blue-100 dark:border-slate-700 rounded-t-2xl">
@@ -242,9 +201,6 @@ const licenciasPendientesDeLaDependencia = licenciasPendientes.filter((l) =>
                           </th>
                           <th className="px-4 py-2 text-center text-sm font-medium text-gray-700 dark:text-gray-300">
                             Observaciones
-                          </th>
-                          <th className="px-1 py-2 text-center text-sm font-medium text-gray-700 dark:text-gray-300">
-                            -
                           </th>
                         </tr>
                       </thead>
@@ -275,14 +231,6 @@ const licenciasPendientesDeLaDependencia = licenciasPendientes.filter((l) =>
                               >
                                 {g.comentario}
                               </td>
-                              <td className="px-2 py-2 text-center">
-                                <button
-                                  className="inline-flex items-center justify-center p-1 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-800 text-blue-600 dark:text-blue-400 transition-all"
-                                  onClick={() => handleAbrirConfirmacion(g.id)}
-                                >
-                                  <Trash size={18} />
-                                </button>
-                              </td>
                             </tr>
                           );
                         })}
@@ -301,20 +249,9 @@ const licenciasPendientesDeLaDependencia = licenciasPendientes.filter((l) =>
 
             {/* ================= Turnos ================= */}
             <div>
-              <IconButton
-                className="ms-auto"
-                icon={PlusCircle}
-                tooltip="Agregar turno"
-                onClick={() =>
-                  navigate("/crear-turno", {
-                    state: { depId: miDependencia?.id },
-                  })
-                }
-                size="sm"
-              />
               {misTurnos.length > 0 ? (
                 misTurnos.map((t) => {
-                  const funcionariosDelTurno = miDependencia.usuarios
+                  const funcionariosDelTurno = dependenciaFinal.usuarios
                     .filter(
                       (f) =>
                         f.rol_jerarquico !== "JEFE_DEPENDENCIA" &&
@@ -354,7 +291,10 @@ const licenciasPendientesDeLaDependencia = licenciasPendientes.filter((l) =>
                                 Nombre
                               </th>
                               <th className="px-4 py-2 text-center text-sm font-medium text-gray-700 dark:text-gray-300">
-                                {fechaSeleccionada === dayjs().format("YYYY-MM-DD") ? "Hoy" : dayjs(fechaSeleccionada).format("DD/MM")}
+                                {fechaSeleccionada ===
+                                dayjs().format("YYYY-MM-DD")
+                                  ? "Hoy"
+                                  : dayjs(fechaSeleccionada).format("DD/MM")}
                               </th>
                             </tr>
                           </thead>
@@ -414,15 +354,6 @@ const licenciasPendientesDeLaDependencia = licenciasPendientes.filter((l) =>
                 <h3 className="text-lg font-semibold text-blue-700 dark:text-blue-400">
                   Todos los funcionarios
                 </h3>
-                <IconButton
-                  className="ms-auto"
-                  icon={PlusCircle}
-                  tooltip="Agregar usuario"
-                  onClick={() =>
-                    navigate(`/agregar-usuarios`)
-                  }
-                  size="sm"
-                />
               </div>
 
               <div className="overflow-x-auto">
@@ -438,13 +369,10 @@ const licenciasPendientesDeLaDependencia = licenciasPendientes.filter((l) =>
                       <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-300">
                         Turno
                       </th>
-                      <th className="font-bold py-1 text-center text-sm text-gray-700 dark:text-gray-300">
-                        . . .
-                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
-                    {miDependencia.usuarios
+                    {dependenciaFinal.usuarios
                       .filter((f) => f.rol_jerarquico !== "JEFE_DEPENDENCIA")
                       .sort((a, b) => {
                         const gradoA = a.grado || "";
@@ -470,18 +398,6 @@ const licenciasPendientesDeLaDependencia = licenciasPendientes.filter((l) =>
                             {turnos.find((t) => t.id === f.turno_id)?.nombre ||
                               "-"}
                           </td>
-                          <td className="px-2 py-2 text-center">
-                            <button
-                              className="inline-flex items-center justify-center p-1.5 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-800 text-blue-600 dark:text-blue-400 transition-all"
-                              onClick={() =>
-                                navigate("/editar-usuario", {
-                                  state: { usuario: f },
-                                })
-                              }
-                            >
-                              <Edit size={18} />
-                            </button>
-                          </td>
                         </tr>
                       ))}
                   </tbody>
@@ -490,58 +406,17 @@ const licenciasPendientesDeLaDependencia = licenciasPendientes.filter((l) =>
             </div>
           </div>
         ) : (
-          <p className="text-center text-gray-600 dark:text-gray-400">
-            Tenés acceso limitado a la información.
-          </p>
+          // Si no hay dependenciaFinal mostramos el selector
+          <div className="flex items-center justify-center bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-blue-100 dark:border-slate-700 p-4 text-center">
+            <IconButton
+              className="m-auto"
+              icon={SearchX}
+              tooltip="Seleccionar dependencia"
+              onClick={() => setDependenciaSeleccionada(null)}
+              size="md"
+            />
+          </div>
         )}
-        {/* Modal confirmación eliminar */}
-        <AnimatePresence>
-          {confirmarBorrado && (
-            <motion.div
-              className="fixed inset-0 flex items-center justify-center bg-black/50 z-50"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              <motion.div
-                className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl p-8 text-center max-w-sm w-full"
-                initial={{ scale: 0.8 }}
-                animate={{ scale: 1 }}
-                exit={{ scale: 0.8 }}
-              >
-                <CheckCircle2 className="text-red-500 w-16 h-16 mx-auto mb-3" />
-
-                <h2 className="text-lg font-semibold text-red-700 dark:text-red-300">
-                  ¿Eliminar guardia?
-                </h2>
-
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                  Esta acción no se puede deshacer. ¿Seguro que deseas eliminar
-                  esta guardia?
-                </p>
-
-                <div className="flex justify-center gap-3 mt-6">
-                  <button
-                    onClick={() => {
-                      setConfirmarBorrado(false);
-                      setGuardiaAEliminar(null);
-                    }}
-                    className="bg-gray-300 hover:bg-gray-400 text-gray-800 dark:bg-gray-700 dark:text-white px-5 py-2 rounded-lg font-medium transition-all"
-                  >
-                    Cancelar
-                  </button>
-
-                  <button
-                    onClick={handleEliminarGuardia}
-                    className="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg font-medium transition-all"
-                  >
-                    {loading2 ? "Eliminando..." : "Eliminar"}
-                  </button>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </main>
 
       <BottomNavbar />
@@ -549,4 +424,4 @@ const licenciasPendientesDeLaDependencia = licenciasPendientes.filter((l) =>
   );
 };
 
-export default Dependencia;
+export default DetalleDependencia;

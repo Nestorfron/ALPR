@@ -11,7 +11,7 @@ export function getTurnoProps(turno) {
       return { clase: "text-xs text-black font-bold bg-yellow-300", contenido: "L.Med" };
     if (t === "licencia" || turno === "L" || t === "reglamentaria")
       return { clase: "text-xs text-white bg-green-600", contenido: "L" };
-    if (t === "l.ext")
+    if (t === "l.ext" || t === "extraordinaria")
       return { clase: "text-xs text-white bg-green-600", contenido: "L.Ext" };
     if (["custodia", "curso", "ch"].includes(t))
       return { clase: "text-xs text-white bg-blue-600", contenido: turno };

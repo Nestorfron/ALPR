@@ -1,5 +1,5 @@
 import React from "react";
-import { Home, User, Bell, Calendar, CalendarCheck } from "lucide-react";
+import { Home, User, Bell, Calendar, CalendarCheck,  List } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
 
@@ -27,6 +27,7 @@ const BottomNavbar = () => {
 
   const menuItems = [
     { icon: <Home size={24} />, path: getHomePath() },
+    { icon: <List size={24} />, path: "/detalle-dependencia" },
     { icon: <Calendar size={24} />, path: "/escalafon-servicio" },
     { icon: <CalendarCheck size={24} />, path: "/licencias" },
     { icon: <Bell size={24} />, path: "/notificaciones" },
@@ -36,16 +37,14 @@ const BottomNavbar = () => {
 
   // Filtrar el Escalafón para roles permitidos
   const filteredMenuItems = menuItems.filter(item => {
-    if (item.label === "Escalafón") {
+    if (item.path === "/escalafon-servicio" || item.path === "/licencias") {
       return !["ADMINISTRADOR", "JEFE_ZONA"].includes(usuario?.rol_jerarquico);
+    } else if (item.path === "/detalle-dependencia") {
+      return !["ADMINISTRADOR", "FUNCIONARIO", "JEFE_DEPENDENCIA"].includes(usuario?.rol_jerarquico);
     }
     return true;
   });
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-blue-100 dark:border-slate-700 shadow-lg z-50 pb-4">
