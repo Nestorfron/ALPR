@@ -30,8 +30,6 @@ const Dependencia = () => {
     loading,
     recargarDatos,
   } = useAppContext();
-  const [success, setSuccess] = useState(false);
-  const [loading2, setLoading2] = useState(false);
   const [confirmarBorrado, setConfirmarBorrado] = useState(false);
   const [guardiaAEliminar, setGuardiaAEliminar] = useState(null);
   const [verTodas, setVerTodas] = useState(false);
@@ -63,10 +61,16 @@ const Dependencia = () => {
   );
 
   // Guardías de la fecha seleccionada
-  const guardiasHoy = guardias.filter(
-    (g) =>
-      dayjs(g.fecha_inicio).utc().format("YYYY-MM-DD") === fechaSeleccionada
-  );
+    const guardiasHoy = miDependencia?.usuarios
+    .map((f) => {
+      const guardia = guardias.find(
+        (g) =>
+          g.usuario_id === f.id &&
+          dayjs(g.fecha_inicio).utc().format("YYYY-MM-DD") === fechaSeleccionada
+      );
+      return guardia || null;
+    })
+    .filter(Boolean); // elimina los null
 
   // Licencias de la fecha seleccionada
   const hoy = dayjs(fechaSeleccionada).utc().startOf("day");
@@ -82,7 +86,7 @@ const Dependencia = () => {
 
   // Asignacion de guardias
   guardiasHoy.forEach((g) => {
-    turnoPorFuncionario[g.usuario_id] = g.tipo; // "T", "1er", "2do", etc.
+    turnoPorFuncionario[g.usuario_id] = g.tipo;
   });
 
   // Asignacion de licencias
@@ -120,25 +124,20 @@ const Dependencia = () => {
       : `${inicial}. ${partes[1] || ""}`;
   };
 
-  // Funcionario extraordinaria
-
   const usuarioExtraordinaria = (id) => {
     const usuario = miDependencia.usuarios.find((u) => u.id === id);
     return "G" + usuario.grado + " " + abreviarNombre(usuario.nombre);
   };
 
-  // Eliminar Extraordinaria (ahora con loading)
   const handleDelete = async (id) => {
     try {
       const tokenLocal = localStorage.getItem("token");
       await deleteData(`/guardias/${id}`, tokenLocal);
       if (typeof recargarDatos === "function") recargarDatos();
-  
     } catch (err) {
       alert(`❌ Error: ${err.message}`);
     }
   };
-  
 
   // Abrir modal de confirmación
   const handleAbrirConfirmacion = (id) => {
@@ -147,20 +146,18 @@ const Dependencia = () => {
   };
 
   // Confirmar y borrar
- const handleEliminarGuardia = async () => {
-  if (!guardiaAEliminar) return;
+  const handleEliminarGuardia = async () => {
+    if (!guardiaAEliminar) return;
 
-  const id = guardiaAEliminar;
+    const id = guardiaAEliminar;
 
-  // cerrar modal de inmediato
-  setConfirmarBorrado(false);
-  setGuardiaAEliminar(null);
+    // cerrar modal de inmediato
+    setConfirmarBorrado(false);
+    setGuardiaAEliminar(null);
 
-  // la petición corre en segundo plano
-  handleDelete(id);
-};
-
-  
+    // la petición corre en segundo plano
+    handleDelete(id);
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-blue-50 to-white dark:from-slate-950 dark:to-slate-900 transition-colors duration-300">
@@ -182,8 +179,6 @@ const Dependencia = () => {
             {miDependencia ? miDependencia.usuarios.length - 1 : 0}
           </p>
         </div>
-
-
 
         {/* Solicitudes de licencias pendientes */}
 
@@ -236,16 +231,18 @@ const Dependencia = () => {
 
               {/* Botón para ver todas */}
               <div className="flex justify-end my-2">
-                {extraordinarias.length > 0 && <button
-                  className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-                  onClick={() => setVerTodas(!verTodas)}
-                >
-                  {verTodas ? "Ver menos" : "Ver más"}
-                </button>}
+                {extraordinarias.length > 0 && (
+                  <button
+                    className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                    onClick={() => setVerTodas(!verTodas)}
+                  >
+                    {verTodas ? "Ver menos" : "Ver más"}
+                  </button>
+                )}
               </div>
 
-              {(verTodas ? extraordinarias : extraordinariasDesdeHoy)
-                .length > 0 ? (
+              {(verTodas ? extraordinarias : extraordinariasDesdeHoy).length >
+              0 ? (
                 <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-blue-100 dark:border-slate-700 overflow-x-auto">
                   <div className="flex items-center justify-between px-4 py-3 bg-blue-50 dark:bg-slate-900 border-b border-blue-100 dark:border-slate-700 rounded-t-2xl">
                     <h3 className="text-lg font-semibold text-blue-700 dark:text-blue-400">
@@ -355,7 +352,7 @@ const Dependencia = () => {
                   return (
                     <div
                       key={t.id}
-                      className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-blue-100 dark:border-slate-700 overflow-x-auto"
+                      className="my-4 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-blue-100 dark:border-slate-700 overflow-x-auto"
                     >
                       {/* Título del turno */}
                       <div className="flex items-center justify-between px-4 py-3 bg-blue-50 dark:bg-slate-900 border-b border-blue-100 dark:border-slate-700 rounded-t-2xl">
@@ -558,7 +555,7 @@ const Dependencia = () => {
                     onClick={handleEliminarGuardia}
                     className="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg font-medium transition-all"
                   >
-                    {loading2 ? "Eliminando..." : "Eliminar"}
+                    {loading ? "Eliminando..." : "Eliminar"}
                   </button>
                 </div>
               </motion.div>

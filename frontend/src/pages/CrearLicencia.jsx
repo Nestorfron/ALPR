@@ -8,10 +8,13 @@ import { estaTokenExpirado } from "../utils/tokenUtils";
 import { useAppContext } from "../context/AppContext";
 import BackButton from "../components/BackButton";
 import Loading from "../components/Loading";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+dayjs.extend(utc);
 
 export default function CrearLicencia() {
   const navigate = useNavigate();
-  const { token, usuario, recargarDatos } = useAppContext();
+  const { token, usuario, recargarDatos, dependencias } = useAppContext();
 
   const [formData, setFormData] = useState({
     usuario_id: usuario?.id || "",
@@ -22,9 +25,24 @@ export default function CrearLicencia() {
     estado: "pendiente",
   });
 
+  const miDependencia = dependencias.find(
+    (dep) => dep.id === usuario.dependencia_id
+  );
+
+  const JefeDependencia = miDependencia?.usuarios?.find(
+    (u) => u.rol_jerarquico === "JEFE_DEPENDENCIA"
+  );
+
+  const notificacion = {
+    usuario_id: JefeDependencia?.id || "",
+    fecha: dayjs().format("YYYY-MM-DD HH:mm:ss"),
+    mensaje: `G${usuario.grado} ${usuario.nombre} solicitó una licencia`,
+  };
+
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [successNotificacion, setSuccessNotificacion] = useState(false);
 
   const validate = (name, value) => {
     let message = "";
@@ -48,6 +66,8 @@ export default function CrearLicencia() {
       const token = localStorage.getItem("token");
       const data = await postData("licencias", formData, token);
       if (data) setSuccess(true);
+      const data1 = await postData("notificaciones", notificacion, token);
+      if (data1) setSuccessNotificacion(true);
       recargarDatos();
     } catch (err) {
       alert(`❌ Error: ${err.message}`);
@@ -80,95 +100,91 @@ export default function CrearLicencia() {
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-blue-50 to-white dark:from-slate-900 dark:to-slate-950">
       <div className="flex-grow flex flex-col items-center p-4 pb-24">
-      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-lg p-6 space-y-4">
-        <form
-          onSubmit={handleSubmit}
-          className="w-full max-w-md space-y-4"
-        >
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <ClipboardList
-              className="text-blue-600 dark:text-blue-300"
-              size={28}
-            />
-            <h1 className="text-xl font-semibold text-blue-900 dark:text-blue-200">
-              Solicitar Nueva Licencia
-            </h1>
-          </div>
-
-          {/* Campos */}
-          {[
-            { name: "fecha_inicio", type: "date", label: "Fecha de inicio" },
-            { name: "fecha_fin", type: "date", label: "Fecha de fin" },
-          ].map(({ name, type, label }) => (
-            <div key={name}>
-              <label className="text-sm text-blue-900 dark:text-blue-200">
-                {label}
-              </label>
-              <input
-                type={type}
-                name={name}
-                value={formData[name]}
-                onChange={handleChange}
-                className={`w-full border rounded-lg px-3 py-2 bg-transparent outline-none focus:ring-2 transition-all ${
-                  errors[name]
-                    ? "border-red-400 focus:ring-red-400"
-                    : "border-blue-200 dark:border-slate-700 focus:ring-blue-400"
-                }`}
+        <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-lg p-6 space-y-4">
+          <form onSubmit={handleSubmit} className="w-full max-w-md space-y-4">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <ClipboardList
+                className="text-blue-600 dark:text-blue-300"
+                size={28}
               />
-              {errors[name] && (
-                <p className="text-xs text-red-500 mt-1">{errors[name]}</p>
-              )}
+              <h1 className="text-xl font-semibold text-blue-900 dark:text-blue-200">
+                Solicitar Nueva Licencia
+              </h1>
             </div>
-          ))}
 
-          {/* Tipo */}
-          <select
-            name="tipo"
-            value={formData.tipo}
-            onChange={handleChange}
-            className="w-full border border-blue-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-transparent focus:ring-2 focus:ring-blue-400 outline-none"
-          >
-            <option value="">Seleccionar tipo de licencia</option>
-            <option value="reglamentaria">Reglamentaria</option>
-            <option value="extraordinaria">Extraordinaria</option>
-            <option value="compensacion">Compensación</option>
-          </select>
-          {errors.tipo && (
-            <p className="text-xs text-red-500 mt-1">{errors.tipo}</p>
-          )}
+            {/* Campos */}
+            {[
+              { name: "fecha_inicio", type: "date", label: "Fecha de inicio" },
+              { name: "fecha_fin", type: "date", label: "Fecha de fin" },
+            ].map(({ name, type, label }) => (
+              <div key={name}>
+                <label className="text-sm text-blue-900 dark:text-blue-200">
+                  {label}
+                </label>
+                <input
+                  type={type}
+                  name={name}
+                  value={formData[name]}
+                  onChange={handleChange}
+                  className={`w-full border rounded-lg px-3 py-2 bg-transparent outline-none focus:ring-2 transition-all ${
+                    errors[name]
+                      ? "border-red-400 focus:ring-red-400"
+                      : "border-blue-200 dark:border-slate-700 focus:ring-blue-400"
+                  }`}
+                />
+                {errors[name] && (
+                  <p className="text-xs text-red-500 mt-1">{errors[name]}</p>
+                )}
+              </div>
+            ))}
 
-          {/* Motivo */}
-          <input
-            type="text"
-            name="motivo"
-            placeholder="Motivo (opcional)"
-            value={formData.motivo}
-            onChange={handleChange}
-            className={`w-full border rounded-lg px-3 py-2 bg-transparent outline-none focus:ring-2 transition-all ${
-              errors.motivo
-                ? "border-red-400 focus:ring-red-400"
-                : "border-blue-200 dark:border-slate-700 focus:ring-blue-400"
-            }`}
-          />
-          {errors.motivo && (
-            <p className="text-xs text-red-500 mt-1">{errors.motivo}</p>
-          )}
+            {/* Tipo */}
+            <select
+              name="tipo"
+              value={formData.tipo}
+              onChange={handleChange}
+              className="w-full border border-blue-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-transparent focus:ring-2 focus:ring-blue-400 outline-none"
+            >
+              <option value="">Seleccionar tipo de licencia</option>
+              <option value="reglamentaria">Reglamentaria</option>
+              <option value="extraordinaria">Extraordinaria</option>
+              <option value="compensacion">Compensación</option>
+            </select>
+            {errors.tipo && (
+              <p className="text-xs text-red-500 mt-1">{errors.tipo}</p>
+            )}
 
-          {/* Botón */}
-          <button
-            type="submit"
-            disabled={loading}
-            className={`w-full py-2 rounded-lg text-white font-medium transition-all ${
-              loading
-                ? "bg-blue-300 cursor-not-allowed"
-                : "bg-blue-600 hover:bg-blue-700"
-            }`}
-          >
-            {loading ? "Enviando Solicitud..." : "Solicitar"}
-          </button>
+            {/* Motivo */}
+            <input
+              type="text"
+              name="motivo"
+              placeholder="Motivo (opcional)"
+              value={formData.motivo}
+              onChange={handleChange}
+              className={`w-full border rounded-lg px-3 py-2 bg-transparent outline-none focus:ring-2 transition-all ${
+                errors.motivo
+                  ? "border-red-400 focus:ring-red-400"
+                  : "border-blue-200 dark:border-slate-700 focus:ring-blue-400"
+              }`}
+            />
+            {errors.motivo && (
+              <p className="text-xs text-red-500 mt-1">{errors.motivo}</p>
+            )}
 
-        </form>
-        <BackButton to={"/licencias"} tooltip="Volver" />
+            {/* Botón */}
+            <button
+              type="submit"
+              disabled={loading}
+              className={`w-full py-2 rounded-lg text-white font-medium transition-all ${
+                loading
+                  ? "bg-blue-300 cursor-not-allowed"
+                  : "bg-blue-600 hover:bg-blue-700"
+              }`}
+            >
+              {loading ? "Enviando Solicitud..." : "Solicitar"}
+            </button>
+          </form>
+          <BackButton to={"/licencias"} tooltip="Volver" />
         </div>
       </div>
 
@@ -176,7 +192,7 @@ export default function CrearLicencia() {
 
       {/* Modal de éxito */}
       <AnimatePresence>
-        {success && (
+        {success && successNotificacion && (
           <motion.div
             className="fixed inset-0 flex items-center justify-center bg-black/50 z-50"
             initial={{ opacity: 0 }}
