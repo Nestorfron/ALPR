@@ -33,12 +33,32 @@ const BottomNavbar = () => {
   const notificacionesCount = notificacionesUsuario.length;
 
   const menuItems = [
-    { key: "home", icon: Home, path: getHomePath() },
-    { key: "dependencia", icon: List, path: "/detalle-dependencia" },
-    { key: "escalafon", icon: Calendar, path: "/escalafon-servicio" },
-    { key: "licencias", icon: CalendarCheck, path: "/licencias" },
-    { key: "notificaciones", icon: Bell, path: "/notificaciones" },
-    { key: "perfil", icon: User, path: "/perfil" },
+    { key: "home", icon: Home, path: getHomePath(), label: "Inicio" },
+    {
+      key: "dependencia",
+      icon: List,
+      path: "/detalle-dependencia",
+      label: "Detalle Dep.",
+    },
+    {
+      key: "escalafon",
+      icon: Calendar,
+      path: "/escalafon-servicio",
+      label: "Escalafon",
+    },
+    {
+      key: "licencias",
+      icon: CalendarCheck,
+      path: "/licencias",
+      label: "Licencias",
+    },
+    {
+      key: "notificaciones",
+      icon: Bell,
+      path: "/notificaciones",
+      label: "Notificaciones",
+    },
+    { key: "perfil", icon: User, path: "/perfil", label: "Perfil" },
   ];
 
   // Filtrar items según rol
@@ -104,6 +124,7 @@ const BottomNavbar = () => {
                   </span>
                 )}
               </div>
+              <span className="mt-1 text-[12px] font-medium">{item.label}</span>
             </button>
           );
         })}

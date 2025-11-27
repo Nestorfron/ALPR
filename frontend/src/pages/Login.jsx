@@ -24,8 +24,6 @@ const Login = () => {
       // ⭐ ID DEL USUARIO PARA GUARDAR LA SUBSCRIPCIÓN PUSH
       const usuarioId = data?.usuario?.id;
 
-      // ⭐ REGISTRAR LA SUSCRIPCIÓN PUSH
-      await registerPush(usuarioId);
 
       // Redirección según el rol jerárquico
       switch (rol) {
@@ -46,6 +44,10 @@ const Login = () => {
           navigate("/login");
           break;
       }
+      
+      // ⭐ REGISTRAR LA SUSCRIPCIÓN PUSH
+      await registerPush(usuarioId);
+      
     } catch (error) {
       console.error(error);
       alert(error.message || "Error al iniciar sesión");

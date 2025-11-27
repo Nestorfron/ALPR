@@ -32,9 +32,17 @@ const Notificaciones = () => {
     recargarNotificaciones();
   };
 
+  const currentYear = new Date().getFullYear();
+
+  // Detecta si la notificación debe llevar al usuario a licencias-solicitadas
+  const debeNavegar = (mensaje) => {
+    return mensaje?.includes("solicitó una licencia");
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-blue-50 to-white dark:from-slate-950 dark:to-slate-900 transition-colors duration-300">
       <main className="flex-1 px-6 py-8 space-y-6">
+        
         {/* Encabezado */}
         <div className="text-center">
           <h1 className="text-2xl font-semibold text-blue-700 dark:text-blue-400">
@@ -56,23 +64,45 @@ const Notificaciones = () => {
           {notificacionesUsuario?.map((n) => (
             <div
               key={n.id}
-              className=" flex items-center justify-between p-4 bg-white dark:bg-slate-800 border border-blue-100 dark:border-slate-700 rounded-2xl shadow-sm"
+              onClick={() => {
+                if (debeNavegar(n.mensaje)) {
+                  navigate(`/solicitudes-licencia`);
+                }
+              }}
+              className={`flex items-center justify-between p-4 bg-white dark:bg-slate-800 border 
+                border-blue-100 dark:border-slate-700 rounded-2xl shadow-sm
+                transition-all 
+                ${
+                  debeNavegar(n.mensaje)
+                    ? "cursor-pointer hover:bg-blue-50 dark:hover:bg-slate-700"
+                    : ""
+                }`}
             >
+              {/* Botón izquierda */}
               <IconButton
                 icon={Bell}
                 tooltip="Eliminar notificación"
-                onClick={() => handleEliminarNotificacion(n.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEliminarNotificacion(n.id);
+                }}
                 size="sm"
               />
-              <p className="text-sm text-gray-700 dark:text-gray-300">
+
+              {/* Mensaje */}
+              <p className="text-sm text-gray-700 dark:text-gray-300 px-3">
                 {n.mensaje || "Sin contenido"}
               </p>
 
+              {/* Botón derecha */}
               <IconButton
                 className="my-auto ms-auto"
                 icon={Trash}
                 tooltip="Eliminar notificación"
-                onClick={() => handleEliminarNotificacion(n.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEliminarNotificacion(n.id);
+                }}
                 size="sm"
               />
             </div>
