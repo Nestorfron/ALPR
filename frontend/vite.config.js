@@ -7,12 +7,17 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
+      strategies: 'injectManifest',       // <-- IMPORTANTE
+      srcDir: 'src',                      // <-- dónde está tu sw.js
+      filename: 'sw.js',                  // <-- nombre del SW real
       registerType: 'autoUpdate',
+    
       includeAssets: [
         'favicon.ico',
         'apple-touch-icon.png',
         'mask-icon.svg'
       ],
+    
       manifest: {
         name: 'SGP2.0',
         short_name: 'SGP2.0',
@@ -40,7 +45,7 @@ export default defineConfig({
           }
         ]
       }
-    })
+    })    
   ],
   server: {
     proxy: {
