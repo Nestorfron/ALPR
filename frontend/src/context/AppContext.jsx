@@ -6,78 +6,27 @@ const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
   const [usuario, setUsuario] = useState(null);
-  const [jefaturas, setJefaturas] = useState([]);
-  const [zonas, setZonas] = useState([]);
-  const [dependencias, setDependencias] = useState([]);
-  const [turnos, setTurnos] = useState([]);
-  const [guardias, setGuardias] = useState([]);
-  const [licencias, setLicencias] = useState([]);
-  const [extraordinarias, setExtraordinarias] = useState([]);
-  const [licenciasPendientes, setLicenciasPendientes] = useState([]);
-  const [licenciasRechazadas, setLicenciasRechazadas] = useState([]);
-  const [notificaciones, setNotificaciones ] = useState([]);
-  
-
-
-  const [token, setToken] = useState(localStorage.getItem("token") || null);
-  const [userId, setUserId] = useState(localStorage.getItem("userId") || null);
   const [loading, setLoading] = useState(true);
+  const [token, setToken] = useState(localStorage.getItem("access_token") || null);
+  const [userId, setUserId] = useState(localStorage.getItem("userId") || null);
 
+  // ================== Fetch usuario ==================
   const fetchAppData = async () => {
     if (!token || !userId) return;
     setLoading(true);
 
     try {
-      const usuarioData = await fetchData(`/usuarios/${userId}`);
+      const usuarioData = await fetchData(`/users/${userId}`, token);
       setUsuario(usuarioData);
-
-      if (usuarioData?.rol_jerarquico === "ADMINISTRADOR" || usuarioData?.rol_jerarquico === "JEFE_ZONA") {
-        const [jefaturasData, dependenciasData, guardiasData, licenciasData, notificacionesData] = await Promise.all([
-          fetchData("/jefaturas"),
-          fetchData("/dependencias"),
-          fetchData("/guardias"),
-          fetchData("/licencias"),
-          fetchData("/notificaciones")
-        ]);
-        setJefaturas(jefaturasData || []);
-        setDependencias(dependenciasData || []);
-        setGuardias(guardiasData || []);
-        setLicencias(licenciasData || []);
-        setNotificaciones(notificacionesData || []);
-      } else if (usuarioData?.rol_jerarquico === "JEFE_DEPENDENCIA" || usuarioData?.rol_jerarquico === "FUNCIONARIO") {
-        const [jefaturasData, dependenciasData, turnosData, guardiasData, licenciasData, notificacionesData ] = await Promise.all([
-          fetchData("/jefaturas"),
-          fetchData("/dependencias"),
-          fetchData("/turnos"),
-          fetchData("/guardias"),
-          fetchData("/licencias"),
-          fetchData("/notificaciones")
-        ]);
-        setJefaturas(jefaturasData || []);
-        setDependencias(dependenciasData || []);
-        setTurnos(turnosData || []);
-        const ordinariasData = guardiasData.filter(g => g.tipo !== "extraordinaria");
-        setGuardias(ordinariasData);
-        const extraorariasData = guardiasData.filter(g => g.tipo === "Extraordinaria" || g.tipo === "Curso" || g.tipo === "curso" || g.tipo === "extraordinaria");
-        setExtraordinarias(extraorariasData);
-        const licenciasAprobadas = licenciasData.filter(l => l.estado === "aprobada" || l.estado === "aprobado" || l.estado === "activo");
-        setLicencias(licenciasAprobadas || []);
-        const licenciasPendientes = licenciasData.filter(l => l.estado === "pendiente");
-        setLicenciasPendientes(licenciasPendientes || []);
-        const licenciasRechazadas = licenciasData.filter(l => l.estado === "rechazada");
-        setLicenciasRechazadas(licenciasRechazadas || []);
-        setNotificaciones(notificacionesData || []);
-      }
     } catch (error) {
-      console.error("Error cargando datos de la app:", error);
+      console.error("Error cargando datos del usuario:", error);
       logout();
     } finally {
       setLoading(false);
     }
   };
 
-  
-
+  // ================== useEffect para cargar usuario ==================
   useEffect(() => {
     if (token && userId && !estaTokenExpirado(token)) {
       fetchAppData();
@@ -86,22 +35,20 @@ export const AppProvider = ({ children }) => {
     }
   }, [token, userId]);
 
-
-  const login = async (correo, password) => {
+  // ================== Login ==================
+  const login = async (username, password) => {
     try {
-      const data = await loginUser(correo, password);
-      if (data.token && data.usuario?.id) {
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("userId", data.usuario.id);
-        setToken(data.token);
-        setUserId(data.usuario.id);
+      const data = await loginUser(username, password); // Debe devolver { access_token, user }
+      if (data.access_token && data.user?.id) {
+        localStorage.setItem("access_token", data.access_token);
+        localStorage.setItem("userId", data.user.id);
+        setToken(data.access_token);
+        setUserId(data.user.id);
 
         await fetchAppData();
         return data;
       } else {
-        throw new Error(
-          "Respuesta de login incompleta: falta token o usuario.id"
-        );
+        throw new Error("Login incompleto: falta token o user.id");
       }
     } catch (err) {
       console.error("Error al iniciar sesión:", err);
@@ -109,50 +56,18 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  // ================== Logout ==================
   const logout = () => {
     logoutUser();
-    localStorage.removeItem("token");
+    localStorage.removeItem("access_token");
     localStorage.removeItem("userId");
     setToken(null);
     setUserId(null);
     setUsuario(null);
-    setJefaturas([]);
-    setZonas([]);
-    setDependencias([]);
-    setTurnos([]);
-    setGuardias([]);
-    setExtraordinarias([]);
-    setLicencias([]);
-    setLicenciasPendientes([]);
-    setLicenciasRechazadas([]);
-    setNotificaciones([]);
-    setUsuario(null);
-
+    setLoading(false);
   };
 
-  const recargarGuaridas = async () => {
-    const data = await fetchData(`/guardias`);
-    const ordinariasData2 = data.filter(g => g.tipo !== "extraordinaria");
-    setGuardias(ordinariasData2);
-    const extraorariasData2 = data.filter(g => g.tipo === "extraordinaria");
-    setExtraordinarias(extraorariasData2);
-    const data2 = await fetchData(`/licencias`);
-    setLicencias(data2);
-  };
-
-  const recargarNotificaciones = async () => {
-    try {
-      const notificacionesData = await fetchData("/notificaciones", token);
-      if (notificacionesData) {
-        setNotificaciones(notificacionesData || []);
-      }
-    } catch (error) {
-      console.error("Error cargando datos de notificaciones:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // ================== Recargar datos del usuario ==================
   const recargarDatos = async () => {
     await fetchAppData();
   };
@@ -161,23 +76,11 @@ export const AppProvider = ({ children }) => {
     <AppContext.Provider
       value={{
         usuario,
-        jefaturas,
-        zonas,
-        dependencias,
-        turnos,
-        guardias,
-        extraordinarias,
-        licencias,
-        licenciasPendientes,
-        licenciasRechazadas,
-        notificaciones,
         token,
         loading,
         login,
         logout,
         recargarDatos,
-        recargarGuaridas,
-        recargarNotificaciones,
         setUsuario,
       }}
     >

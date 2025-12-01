@@ -7,8 +7,7 @@ from flask_migrate import Migrate
 from extensions import mail
 
 from config import Config
-from api.models import db, Usuario, Turno, Jefatura, Zona, Dependencia, Licencia, Guardia, Notificacion, Suscripcion
-
+from api.models import db, User, Plate, PlateStatus, PlateScan, CheckHistory
 from api.routes import api
 
 
@@ -25,15 +24,12 @@ def create_app():
 
     # Admin panel
     admin = Admin(app, name='Panel Admin')
-    admin.add_view(ModelView(Usuario, db.session))
-    admin.add_view(ModelView(Jefatura, db.session))
-    admin.add_view(ModelView(Zona, db.session))
-    admin.add_view(ModelView(Dependencia, db.session))
-    admin.add_view(ModelView(Turno, db.session))
-    admin.add_view(ModelView(Guardia, db.session))
-    admin.add_view(ModelView(Licencia, db.session))
-    admin.add_view(ModelView(Notificacion, db.session))
-    admin.add_view(ModelView(Suscripcion, db.session))
+    admin.add_view(ModelView(User, db.session))
+    admin.add_view(ModelView(Plate, db.session))
+    admin.add_view(ModelView(PlateStatus, db.session))
+    admin.add_view(ModelView(PlateScan, db.session))
+    admin.add_view(ModelView(CheckHistory, db.session))
+
 
     # Blueprints
     app.register_blueprint(api, url_prefix='/api')

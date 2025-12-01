@@ -5,273 +5,118 @@ from datetime import datetime
 db = SQLAlchemy(engine_options=Config.SQLALCHEMY_ENGINE_OPTIONS)
 
 
-# -------------------------
-# ENTIDADES PRINCIPALES
-# -------------------------
-
-class Jefatura(db.Model):
-    __tablename__ = 'jefaturas'
+# ------------------- User -------------------
+class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    nombre = db.Column(db.String(100), nullable=False)
-    descripcion = db.Column(db.Text)
+    username = db.Column(db.String(128), index=True, unique=True)
+    password = db.Column(db.String(512))
+    email = db.Column(db.String(128), unique=True)
+    active = db.Column(db.Boolean(), default=True)
+    role = db.Column(db.String(32), default="user")
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    zonas = db.relationship('Zona', backref='jefatura', lazy=True)
-
-    def serialize(self):
-        return {
-            'id': self.id,
-            'nombre': self.nombre,
-            'descripcion': self.descripcion,
-            'zonas': [z.serialize() for z in self.zonas]
-        }
+    reported_plates = db.relationship("PlateStatus", backref="reporter", lazy=True)
+    scans = db.relationship("PlateScan", backref="scanner", lazy=True)
+    history = db.relationship("CheckHistory", backref="user", lazy=True)
 
     def __repr__(self):
-        return f'<Jefatura {self.nombre}>'
-
-
-class Zona(db.Model):
-    __tablename__ = 'zonas'
-    id = db.Column(db.Integer, primary_key=True)
-    nombre = db.Column(db.String(100), nullable=False)
-    descripcion = db.Column(db.Text)
-    jefatura_id = db.Column(db.Integer, db.ForeignKey('jefaturas.id'), nullable=False)
-
-    dependencia_id = db.Column(
-        db.Integer,
-        db.ForeignKey('dependencias.id', use_alter=True, name='fk_zona_dependencia'),
-        nullable=True
-    )
-
-    dependencias = db.relationship(
-        'Dependencia',
-        backref='zona',
-        lazy=True,
-        foreign_keys='Dependencia.zona_id'
-    )
-
-    def serialize(self):
-        return {
-            'id': self.id,
-            'nombre': self.nombre,
-            'descripcion': self.descripcion,
-            'jefatura_id': self.jefatura_id,
-            'dependencia_propia': self.dependencia_propia.serialize() if self.dependencia_propia else None,
-            'dependencias': [d.serialize() for d in self.dependencias]
-        }
-
-    def __repr__(self):
-        return f'<Zona {self.nombre}>'
-
-
-class Dependencia(db.Model):
-    __tablename__ = 'dependencias'
-    id = db.Column(db.Integer, primary_key=True)
-    nombre = db.Column(db.String(100), nullable=False)
-    descripcion = db.Column(db.Text)
-    zona_id = db.Column(db.Integer, db.ForeignKey('zonas.id'), nullable=True)
-
-    usuarios = db.relationship('Usuario', backref='dependencia', lazy=True)
-    turnos = db.relationship('Turno', backref='dependencia', lazy=True)
-
-    zonas_asignadas = db.relationship(
-        'Zona',
-        backref='dependencia_propia',
-        lazy=True,
-        foreign_keys='Zona.dependencia_id'
-    )
-
-    def serialize(self):
-        return {
-            'id': self.id,
-            'nombre': self.nombre,
-            'descripcion': self.descripcion,
-            'zona_id': self.zona_id,
-            'usuarios': [u.serialize() for u in self.usuarios],
-            'turnos': [t.serialize() for t in self.turnos]
-        }
-
-    def __repr__(self):
-        return f'<Dependencia {self.nombre}>'
-
-
-class Usuario(db.Model):
-    __tablename__ = 'usuarios'
-    id = db.Column(db.Integer, primary_key=True)
-    grado = db.Column(db.String(50), nullable=False)
-    nombre = db.Column(db.String(150), nullable=False)
-    correo = db.Column(db.String(150), unique=True, nullable=False)
-    password = db.Column(db.String(255), nullable=False)
-    rol_jerarquico = db.Column(db.String(50), nullable=False)
-    fecha_ingreso = db.Column(db.DateTime, nullable=True)
-    is_admin = db.Column(db.Boolean, default=False)
-
-
-    dependencia_id = db.Column(db.Integer, db.ForeignKey('dependencias.id'), nullable=True)
-    zona_id = db.Column(db.Integer, db.ForeignKey('zonas.id'), nullable=True)
-
-    turno_id = db.Column(db.Integer, db.ForeignKey('turnos.id'), nullable=True)
-
-    estado = db.Column(db.String(50), nullable=True)
+        return f"<User {self.username}>"
     
-    zona = db.relationship('Zona', backref='usuarios', foreign_keys=[zona_id])
-
-    guardias = db.relationship('Guardia', backref='usuario', lazy=True)
-    licencias = db.relationship('Licencia', backref='usuario', lazy=True)
-
-    notificaciones = db.relationship('Notificacion', backref='usuario', lazy=True)
-    suscripciones = db.relationship('Suscripcion', backref='usuario', lazy=True)
-
     def serialize(self):
         return {
-            'id': self.id,
-            'grado': self.grado,
-            'nombre': self.nombre,
-            'correo': self.correo,
-            'rol_jerarquico': self.rol_jerarquico,
-            'fecha_ingreso': self.fecha_ingreso,
-            'dependencia_id': self.dependencia_id,
-            'zona_id': self.zona_id,
-            'turno_id': self.turno_id,
-            'estado': self.estado,
-            'is_admin': self.is_admin
+            "id": self.id,
+            "username": self.username,
+            "email": self.email,
+            "active": self.active,
+            "role": self.role
         }
 
 
-    def __repr__(self):
-        return f'<Usuario {self.nombre}>'
-    
-
-class PasswordResetToken(db.Model):
-    __tablename__ = 'password_reset_tokens'
+# ------------------- Plate -------------------
+class Plate(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
-    token = db.Column(db.String(64), unique=True, nullable=False)
-    expiration = db.Column(db.DateTime, nullable=False)
-    usado = db.Column(db.Boolean, default=False)
+    plate = db.Column(db.String(10), unique=True, nullable=False, index=True)
+    exists_in_system = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    usuario = db.relationship('Usuario', backref='reset_tokens')
+    statuses = db.relationship("PlateStatus", backref="plate_obj", lazy=True)
+    scans = db.relationship("PlateScan", backref="plate_obj", lazy=True)
 
     def __repr__(self):
-        return f'<PasswordResetToken {self.token} for usuario_id {self.usuario_id}>'
-
-
-
-# -------------------------
-# TURNOS Y RELACIONADOS
-# -------------------------
-
-class Turno(db.Model):
-    __tablename__ = 'turnos'
-    id = db.Column(db.Integer, primary_key=True)
-    nombre = db.Column(db.String(100), nullable=False)
-    hora_inicio = db.Column(db.Time, nullable=False)
-    hora_fin = db.Column(db.Time, nullable=False)
-    descripcion = db.Column(db.Text)
-    dependencia_id = db.Column(db.Integer, db.ForeignKey('dependencias.id'), nullable=False)
-
+        return f"<Plate {self.plate}>"
 
     def serialize(self):
         return {
-            'id': self.id,
-            'nombre': self.nombre,
-            'hora_inicio': str(self.hora_inicio),
-            'hora_fin': str(self.hora_fin),
-            'descripcion': self.descripcion,
-            'dependencia_id': self.dependencia_id
+            "id": self.id,
+            "plate": self.plate,
+            "exists_in_system": self.exists_in_system
         }
 
-    def __repr__(self):
-        return f'<Turno {self.nombre}>'
 
-# -------------------------
-# GUARDIAS Y LICENCIAS
-# -------------------------
-
-class Guardia(db.Model):
-    __tablename__ = 'guardias'
+# ------------------- Plate Status -------------------
+class PlateStatus(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
-    fecha_inicio = db.Column(db.DateTime, nullable=False)
-    fecha_fin = db.Column(db.DateTime, nullable=False)
-    tipo = db.Column(db.String(50), nullable=False)
-    comentario = db.Column(db.Text)
+    plate_id = db.Column(db.Integer, db.ForeignKey("plate.id"), nullable=False)
+    status = db.Column(db.String(20), nullable=False)  # Normal, Requerida, Robada, etc.
+    reason = db.Column(db.String(255))
+    reported_by = db.Column(db.Integer, db.ForeignKey("user.id"))
+    reported_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f"<PlateStatus {self.status} for {self.plate_obj.plate}>"
 
     def serialize(self):
         return {
-            'id': self.id,
-            'usuario_id': self.usuario_id,
-            'fecha_inicio': self.fecha_inicio,
-            'fecha_fin': self.fecha_fin,
-            'tipo': self.tipo,
-            'comentario': self.comentario
+            "id": self.id,
+            "plate_id": self.plate_id,
+            "status": self.status,
+            "reason": self.reason,
+            "reported_by": self.reported_by,
+            "reported_at": self.reported_at.isoformat()
         }
 
-    def __repr__(self):
-        return f'<Guardia {self.id}>'
-    
 
-
-class Licencia(db.Model):
-    __tablename__ = 'licencias'
+# ------------------- Plate Scan -------------------
+class PlateScan(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
-    fecha_inicio = db.Column(db.Date, nullable=False)
-    fecha_fin = db.Column(db.Date, nullable=False)
-    tipo = db.Column(db.String(50), nullable=False)
-    motivo = db.Column(db.String(50), nullable=False)
-    estado = db.Column(db.String(50), nullable=False)
+    plate_id = db.Column(db.Integer, db.ForeignKey("plate.id"))
+    raw_text = db.Column(db.Text)
+    confidence = db.Column(db.Float)
+    image_path = db.Column(db.String(255))
+    scanned_by = db.Column(db.Integer, db.ForeignKey("user.id"))
+    scanned_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f"<PlateScan {self.plate_obj.plate if self.plate_obj else 'Unknown'}>"
 
     def serialize(self):
         return {
-            'id': self.id,
-            'usuario_id': self.usuario_id,
-            'fecha_inicio': self.fecha_inicio,
-            'fecha_fin': self.fecha_fin,
-            'tipo': self.tipo,
-            'motivo': self.motivo,
-            'estado': self.estado
+            "id": self.id,
+            "plate_id": self.plate_id,
+            "raw_text": self.raw_text,
+            "confidence": self.confidence,
+            "image_path": self.image_path,
+            "scanned_by": self.scanned_by,
+            "scanned_at": self.scanned_at.isoformat()
         }
 
-    def __repr__(self):
-        return f'<Licencia {self.id}>'
 
-class Notificacion(db.Model):
-    __tablename__ = 'notificaciones'
+# ------------------- Check History -------------------
+class CheckHistory(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
-    fecha = db.Column(db.DateTime, nullable=False)
-    mensaje = db.Column(db.Text, nullable=False)
+    plate = db.Column(db.String(10), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    status = db.Column(db.String(50), nullable=False)
+    checked_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    def __repr__(self):
+        return f"<CheckHistory {self.plate} by User {self.user_id}>"
 
     def serialize(self):
         return {
-            'id': self.id,
-            'usuario_id': self.usuario_id,
-            'fecha': self.fecha,
-            'mensaje': self.mensaje
+            "id": self.id,
+            "plate": self.plate,
+            "user_id": self.user_id,
+            "status": self.status,
+            "checked_at": self.checked_at.isoformat()
         }
-
-    def __repr__(self):
-        return f'<Notificacion {self.id}>'
-    
-
-class Suscripcion(db.Model):
-    __tablename__ = "suscripciones"
-    id = db.Column(db.Integer, primary_key=True)
-    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
-    endpoint = db.Column(db.String(300), nullable=False)
-    p256dh = db.Column(db.String(300), nullable=False)
-    auth = db.Column(db.String(300), nullable=False)
-
-    def serialize(self):
-        return {
-            'id': self.id,
-            'usuario_id': self.usuario_id,
-            'endpoint': self.endpoint,
-            'p256dh': self.p256dh,
-            'auth': self.auth
-        }
-
-    def __repr__(self):
-        return f'<Suscripcion {self.id}>'
-
